@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Live Call Dashboard</title>
+<style>
+  :root {
+    --bg: #0b0f17; --panel: #121826; --panel-2: #0f1522; --line: #1f2a3d; --text: #e6edf7; --muted: #8a99b3;
+    --accent: #5b8cff; --accent-2: #2dd4bf; --warn: #f5b84a; --ok: #34d399; --bad: #f87171; --chip: #1a2335;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }
+  header { display: flex; align-items: center; gap: 14px; padding: 16px 24px; border-bottom: 1px solid var(--line); background: linear-gradient(180deg, #101726, var(--bg)); }
+  .logo { width: 30px; height: 30px; border-radius: 8px; background: linear-gradient(135deg, var(--accent), var(--accent-2)); display: grid; place-items: center; font-weight: 700; color: #06101f; }
+  h1 { font-size: 16px; margin: 0; font-weight: 600; letter-spacing: .2px; }
+  .sub { color: var(--muted); font-size: 12px; }
+  .spacer { flex: 1; }
+  .pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; background: var(--chip); color: var(--muted); font-size: 12px; border: 1px solid var(--line); }
+  .live { color: var(--ok); }
+  .live::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 0 0 rgba(52,211,153,.6); animation: pulse 1.6s infinite; }
+  .idle::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+  @keyframes pulse { 70% { box-shadow: 0 0 0 8px rgba(52,211,153,0); } 100% { box-shadow: 0 0 0 0 rgba(52,211,153,0); } }
+  main { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 16px; padding: 16px 24px 24px; }
+  .col { display: grid; gap: 16px; align-content: start; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; min-width: 0; }
+  .card h2 { margin: 0 0 10px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+  .card h2 .tag { margin-left: auto; text-transform: none; letter-spacing: 0; font-weight: 500; }
+  canvas { width: 100%; height: 120px; display: block; background: var(--panel-2); border-radius: 8px; }
+  .metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
+  .metric { background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+  .metric b { display: block; font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .metric span { color: var(--muted); font-size: 11px; }
+  .chat { display: flex; flex-direction: column; gap: 8px; height: 300px; overflow-y: auto; padding-right: 4px; }
+  .msg { max-width: 82%; padding: 8px 12px; border-radius: 12px; }
+  .msg small { display: block; font-size: 10px; color: var(--muted); margin-bottom: 2px; text-transform: uppercase; letter-spacing: .06em; }
+  .agent { align-self: flex-end; background: #1b2a4a; border: 1px solid #27406f; }
+  .caller { align-self: flex-start; background: #14251f; border: 1px solid #1f4436; }
+  .partial { opacity: .65; font-style: italic; }
+  .steps { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+  .step { padding: 4px 10px; border-radius: 999px; background: var(--chip); color: var(--muted); font-size: 12px; border: 1px solid var(--line); }
+  .step.on { color: #06101f; background: var(--accent-2); border-color: var(--accent-2); font-weight: 600; }
+  .step.done { color: var(--text); border-color: #2c3a55; }
+  .email-value { font: 600 18px ui-monospace, SFMono-Regular, Menlo, monospace; padding: 10px 12px; border-radius: 8px; background: var(--panel-2); border: 1px dashed var(--line); min-height: 46px; }
+  .email-value.confirmed { border: 1px solid var(--ok); color: var(--ok); }
+  .email-value.candidate { border: 1px solid var(--warn); color: var(--warn); }
+  .results { margin-top: 10px; display: grid; gap: 6px; }
+  .result { font-size: 12px; color: var(--muted); }
+  .result b { color: var(--text); font-weight: 600; }
+  .citation { background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; margin-top: 8px; }
+  .citation .src { color: var(--accent); font-size: 12px; }
+  .muted { color: var(--muted); }
+  .log { font: 12px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; height: 150px; overflow-y: auto; color: #b8c4da; }
+  .log div span { color: var(--muted); }
+  .kv { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-size: 12px; }
+  .kv span:nth-child(odd) { color: var(--muted); }
+  .ok { color: var(--ok); } .warn { color: var(--warn); } .bad { color: var(--bad); }
+  footer { color: var(--muted); font-size: 12px; padding: 0 24px 20px; }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; padding: 12px; } header { padding: 12px; } .metrics { grid-template-columns: repeat(2, 1fr); } }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">C</div>
+  <div>
+    <h1>Calling Agent Toolkit — Live call</h1>
+    <div class="sub" id="callinfo">Waiting for the next call…</div>
+  </div>
+  <div class="spacer"></div>
+  <span class="pill">Twilio Media Streams · μ-law 8 kHz → PCM 16 kHz</span>
+  <span class="pill idle" id="status">Idle</span>
+</header>
+
+<main>
+  <div class="col">
+    <section class="card">
+      <h2>Caller audio <span class="tag pill">after AudioPipeline · 20 ms frames</span></h2>
+      <canvas id="wave"></canvas>
+      <div class="metrics">
+        <div class="metric"><b id="m-frames">0</b><span>frames processed</span></div>
+        <div class="metric"><b id="m-micros">–</b><span>µs per frame (pipeline)</span></div>
+        <div class="metric"><b id="m-dropped">0</b><span>frames dropped</span></div>
+        <div class="metric"><b id="m-ns" class="warn">off</b><span>noise suppression</span></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Conversation <span class="tag pill">caller STT is scripted · everything after it is real</span></h2>
+      <div class="chat" id="chat"></div>
+    </section>
+
+    <section class="card">
+      <h2>Normalized telephony events</h2>
+      <div class="log" id="log"></div>
+    </section>
+  </div>
+
+  <div class="col">
+    <section class="card">
+      <h2>Email capture</h2>
+      <div class="steps" id="steps">
+        <span class="step" data-s="none">none</span>
+        <span class="step" data-s="asked">asked</span>
+        <span class="step" data-s="declined">declined</span>
+        <span class="step" data-s="candidate">candidate</span>
+        <span class="step" data-s="confirmed">confirmed</span>
+      </div>
+      <div class="email-value" id="email-value"><span class="muted">No address yet</span></div>
+      <div class="results" id="email-results"></div>
+    </section>
+
+    <section class="card">
+      <h2>Grounded context (RAG)</h2>
+      <div class="result" id="rag-status">Retrieval runs on committed utterances only.</div>
+      <div id="rag-cites"></div>
+    </section>
+
+    <section class="card">
+      <h2>Session</h2>
+      <div class="kv" id="session"></div>
+    </section>
+  </div>
+</main>
+<footer>
+  Real toolkit code path: Twilio wire messages → TwilioMediaSession → AudioPipeline → TranscriptReconciler → EmailCapture + RetrievalCoordinator.
+  Caller audio is synthesized and the caller's speech-to-text results are scripted, so no provider account or API key is needed.
+</footer>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const canvas = $("wave");
+  const ctx = canvas.getContext("2d");
+  let levels = [];
+  let partialEl = null;
+  let order = ["none", "asked", "declined", "candidate", "confirmed"];
+
+  function draw() {
+    const dpr = window.devicePixelRatio || 1;
+    const w = canvas.clientWidth, h = canvas.clientHeight;
+    if (canvas.width !== w * dpr) { canvas.width = w * dpr; canvas.height = h * dpr; }
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+    const bars = Math.floor(w / 4);
+    const data = levels.slice(-bars);
+    const grad = ctx.createLinearGradient(0, 0, w, 0);
+    grad.addColorStop(0, "#5b8cff"); grad.addColorStop(1, "#2dd4bf");
+    ctx.fillStyle = grad;
+    data.forEach((v, i) => {
+      const bh = Math.max(2, Math.min(1, v * 4.5) * (h - 10));
+      ctx.fillRect(w - (data.length - i) * 4, (h - bh) / 2, 2.5, bh);
+    });
+    requestAnimationFrame(draw);
+  }
+  requestAnimationFrame(draw);
+
+  function addMsg(who, text, partial = false) {
+    const el = document.createElement("div");
+    el.className = `msg ${who}${partial ? " partial" : ""}`;
+    el.innerHTML = `<small>${who === "agent" ? "Agent (your LLM)" : "Caller"}</small>${esc(text)}`;
+    $("chat").appendChild(el);
+    $("chat").scrollTop = $("chat").scrollHeight;
+    return el;
+  }
+
+  function log(t, text) {
+    const el = document.createElement("div");
+    el.innerHTML = `<span>${(t / 1000).toFixed(2).padStart(6)}s</span>  ${esc(text)}`;
+    $("log").appendChild(el);
+    $("log").scrollTop = $("log").scrollHeight;
+  }
+
+  function setEmailState(state) {
+    const current = order.indexOf(state.status);
+    document.querySelectorAll(".step").forEach((s) => {
+      const i = order.indexOf(s.dataset.s);
+      s.className = "step" + (i === current ? " on" : i < current && !(s.dataset.s === "declined" && state.status !== "declined" && current < 2) ? " done" : "");
+    });
+    const v = $("email-value");
+    if (state.email) { v.className = "email-value confirmed"; v.textContent = state.email + "  ✓"; }
+    else if (state.candidate) { v.className = "email-value candidate"; v.textContent = state.candidate + "  (awaiting confirmation)"; }
+    else { v.className = "email-value"; v.innerHTML = '<span class="muted">No address yet</span>'; }
+  }
+
+  function describe(result) {
+    switch (result.type) {
+      case "question_asked": return "<b>question asked</b> — refusals are now recognised";
+      case "declined": return `<b>declined</b>${result.deferred ? " (later)" : ""} — respected, still listening`;
+      case "candidate": return `<b>candidate</b> ${esc(result.email)} — read it back to the caller`;
+      case "confirmed": return `<b>confirmed</b> ${esc(result.email)}`;
+      case "clarification_needed": return `<b>clarify</b> ${esc(result.reason)} (heard ${esc(result.heard)})`;
+      case "kept_confirmed": return `<b>kept</b> ${esc(result.email)} — ignored uncertain ${esc(result.heard)}`;
+      default: return esc(result.type);
+    }
+  }
+
+  function reset(e) {
+    levels = []; partialEl = null;
+    $("chat").innerHTML = ""; $("log").innerHTML = ""; $("email-results").innerHTML = "";
+    $("rag-status").textContent = "Retrieval runs on committed utterances only.";
+    $("rag-cites").innerHTML = "";
+    setEmailState({ status: "none", email: null, candidate: null });
+    $("callinfo").textContent = `Call #${e.number} · ${e.callSid}`;
+    $("session").innerHTML = "";
+  }
+
+  const source = new EventSource("/events");
+  source.onmessage = (msg) => {
+    const e = JSON.parse(msg.data);
+    switch (e.type) {
+      case "call":
+        if (e.phase === "start") { reset(e); $("status").className = "pill live"; $("status").textContent = "Live"; }
+        else { $("status").className = "pill idle"; $("status").textContent = `Ended · ${(e.durationMs / 1000).toFixed(1)}s`; }
+        break;
+      case "level": levels.push(e.rms); if (levels.length > 2000) levels = levels.slice(-1000); break;
+      case "metrics":
+        $("m-frames").textContent = e.frames.toLocaleString();
+        $("m-micros").textContent = e.avgMicros.toFixed(1);
+        $("m-dropped").textContent = e.dropped;
+        break;
+      case "pipeline": {
+        $("m-ns").textContent = e.status.noiseSuppressionActive ? "active" : "off";
+        $("m-ns").className = e.status.noiseSuppressionActive ? "ok" : "warn";
+        const c = e.capabilities;
+        $("session").innerHTML = [
+          ["Output format", `${e.status.targetFormat.encoding} · ${e.status.targetFormat.sampleRate} Hz`],
+          ["Frame size", `${e.status.frameSamples} samples (20 ms)`],
+          ["Playback", c.playback], ["Marks / clear", `${c.playback_marks} / ${c.playback_interruption}`],
+          ["DTMF receive", c.dtmf_receive], ["DTMF send", c.dtmf_send],
+          ["Warnings", e.status.warnings.length ? e.status.warnings.join(", ") : "none"],
+        ].map(([k, v]) => `<span>${esc(k)}</span><span>${esc(v)}</span>`).join("");
+        break;
+      }
+      case "event": log(e.t, `${e.event.type}${e.event.format ? ` ${e.event.format.encoding}/${e.event.format.sampleRate}` : ""}${e.event.reason ? ` (${e.event.reason})` : ""}  seq=${e.event.providerSequence ?? "–"}`); break;
+      case "agent": addMsg("agent", e.text); break;
+      case "transcript":
+        if (e.kind === "partial") {
+          if (!partialEl) partialEl = addMsg("caller", e.text, true);
+          else partialEl.lastChild.textContent = e.text;
+        } else {
+          if (partialEl) partialEl.remove();
+          partialEl = null;
+          addMsg("caller", e.text);
+          log(e.t, `transcript.final ${e.turnId} "${e.text}"`);
+        }
+        break;
+      case "email": {
+        setEmailState(e.state);
+        const el = document.createElement("div");
+        el.className = "result";
+        el.innerHTML = `${(e.t / 1000).toFixed(1)}s · ${describe(e.result)}`;
+        $("email-results").prepend(el);
+        break;
+      }
+      case "rag": {
+        $("rag-status").innerHTML = `<b>${esc(e.status)}</b> · “${esc(e.query)}” · ${e.droppedForAccess} hidden by ACL`;
+        if (e.status === "ok") {
+          $("rag-cites").innerHTML = e.citations
+            .map((c) => `<div class="citation"><div class="src">[${esc(c.id)}] ${esc(c.title ?? c.documentId)} · ${esc(c.uri ?? "")}</div>${esc(c.text)}</div>`)
+            .join("");
+        }
+        break;
+      }
+      case "error": log(0, `error: ${e.message}`); break;
+    }
+  };
+</script>
+</body>
+</html>
