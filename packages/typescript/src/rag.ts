@@ -180,7 +180,7 @@ const STOP_WORDS = new Set(
     them themselves then there these they this those through to too under until up very
     was we were what when where which while who whom why will with would you your yours
     yourself yourselves
-  `.trim().split(/\\s+/),
+  `.trim().split(/\s+/),
 );
 const terms = (text: string) =>
   new Set((text.toLowerCase().match(/[a-z0-9]+/g) ?? []).filter((term) => !STOP_WORDS.has(term)));
