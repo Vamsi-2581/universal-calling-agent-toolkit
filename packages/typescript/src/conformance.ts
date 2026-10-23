@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Vasik Mansuri
 import type { MediaConnection, MediaSession, MediaSessionOptions, MediaTransportAdapter } from "./adapters.js";
 import { undeclaredCapabilities } from "./capabilities.js";
 import { ProviderError, type ProviderErrorCode } from "./errors.js";

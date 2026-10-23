@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Vasik Mansuri
 /**
  * Deepgram live transcription (wss://api.deepgram.com/v1/listen).
  * Messages: https://developers.deepgram.com/docs/live-streaming-audio,

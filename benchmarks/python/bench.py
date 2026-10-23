@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Vasik Mansuri
 """Micro-benchmarks for the realtime path. Run from packages/python:
 
     uv run python ../../benchmarks/python/bench.py

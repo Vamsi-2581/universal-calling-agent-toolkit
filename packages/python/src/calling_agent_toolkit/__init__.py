@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Vasik Mansuri
 """Provider-neutral building blocks for existing AI calling agents."""
 
 from .adapters import (

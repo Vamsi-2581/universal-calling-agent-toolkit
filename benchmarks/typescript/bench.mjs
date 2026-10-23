@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Vasik Mansuri
 // Micro-benchmarks for the realtime path. Run after `npm run build` in packages/typescript:
 //   node benchmarks/typescript/bench.mjs
 // Prints measured numbers only; results depend on the machine and are not a performance guarantee.

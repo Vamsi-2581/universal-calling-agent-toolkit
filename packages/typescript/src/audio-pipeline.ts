@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Vasik Mansuri
 /**
  * Shared audio path between a media adapter and STT:
  * decode -> validate -> resample -> fixed framing -> processors (noise suppression, speaker isolation).

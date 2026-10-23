@@ -1,6 +1,6 @@
 # Security
 
-Status: all phases built; not yet audited externally. Report vulnerabilities privately to the maintainers. Do not open public issues for them.
+Status: all phases built; not yet audited externally. Report vulnerabilities privately through [GitHub private vulnerability reporting](https://github.com/vasikmansuri/universal-calling-agent-toolkit/security/advisories/new). Do not open public issues for them.
 
 ## Webhook and stream authentication
 

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Vasik Mansuri
 /**
  * Provider-neutral speech-to-text contracts, plus the reconciler that turns provider results into
  * ordered, de-duplicated TranscriptEvents (the input of EmailCapture and the RAG coordinator).

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Vasik Mansuri
 import { ProviderError } from "./errors.js";
 import { CAPABILITIES, type Capability, type ProviderCapabilities } from "./types.js";
 

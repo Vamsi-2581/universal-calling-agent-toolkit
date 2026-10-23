@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Vasik Mansuri
 export * from "./types.js";
 export * from "./errors.js";
 export * from "./capabilities.js";

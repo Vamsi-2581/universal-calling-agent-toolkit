@@ -21,7 +21,6 @@ Remove those locks only after the owner explicitly approves a release.
 - [ ] Licence review: runtime dependencies are none. Dev dependencies (vitest, ajv, typescript, pytest, jsonschema, mypy, langchain-core) are not shipped.
 - [ ] `npm pack` and `uv build` artifacts inspected: only `dist/` and `LICENSE`/`README.md` in npm; only the package and `py.typed` in the wheel.
 - [ ] CI green on Node 20/22 and Python 3.10/3.13.
-- [ ] SECURITY.md contact address filled in.
 
 ## Publishing (after approval)
 

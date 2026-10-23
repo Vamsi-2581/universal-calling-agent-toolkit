@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Vasik Mansuri
 import type { MediaConnection, MediaSession, MediaSessionOptions, MediaSessionState, OperationOptions } from "./adapters.js";
 import { frameToWire } from "./audio.js";
 import { requireCapability } from "./capabilities.js";

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Vasik Mansuri
 import { ProviderError } from "./errors.js";
 import { SUPPORTED_SAMPLE_RATES, type AudioFormat, type AudioFrame } from "./types.js";
 

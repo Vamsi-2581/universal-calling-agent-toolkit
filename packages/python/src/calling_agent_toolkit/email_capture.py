@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Vasik Mansuri
 """Provider-independent email capture from normalized transcript events.
 
 It never speaks or prompts: results tell the host agent what to say next.

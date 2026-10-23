@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Vasik Mansuri
 /**
  * Twilio adapters.
  * Media Streams protocol: https://www.twilio.com/docs/voice/media-streams/websocket-messages

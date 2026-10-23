@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Vasik Mansuri
 """Adapter contracts. Call control and media transport are separate by design."""
 
 from __future__ import annotations

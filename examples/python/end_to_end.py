@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Vasik Mansuri
 """End-to-end example: recording -> audio pipeline -> STT -> transcript -> email capture + RAG.
 
 Run from packages/python:  uv run python ../../examples/python/end_to_end.py

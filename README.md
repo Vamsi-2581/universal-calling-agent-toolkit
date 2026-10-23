@@ -3,6 +3,7 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/vasikmansuri/universal-calling-agent-toolkit/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/vasikmansuri/universal-calling-agent-toolkit/actions/workflows/ci.yml/badge.svg" /></a>
   <img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-5b8cff" />
   <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-ESM%20%C2%B7%20Node%2020%2B-3178c6?logo=typescript&logoColor=white" />
   <img alt="Python" src="https://img.shields.io/badge/Python-3.10%2B%20%C2%B7%20typed-3776ab?logo=python&logoColor=white" />
@@ -248,6 +249,12 @@ Contributions are welcome, especially new providers and noise-suppression engine
 
 If this project helps you, please ⭐ star the repo. It helps others find it.
 
+## Author
+
+Created and maintained by **[Vasik Mansuri](https://github.com/vasikmansuri)**.
+
+If you use this project, keep the [NOTICE](NOTICE) file and the copyright headers, as the Apache-2.0 license requires, and a link back here is appreciated.
+
 ## License
 
-[Apache-2.0](LICENSE)
+Copyright 2026 Vasik Mansuri. Licensed under the [Apache License, Version 2.0](LICENSE). See [NOTICE](NOTICE).

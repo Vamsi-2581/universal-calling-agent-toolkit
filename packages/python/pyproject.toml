@@ -9,11 +9,31 @@ description = "Provider-neutral telephony, audio, email-capture, STT and RAG bui
 readme = "README.md"
 license = "Apache-2.0"
 requires-python = ">=3.10"
+authors = [{ name = "Vasik Mansuri", email = "mansurivasik@gmail.com" }]
+maintainers = [{ name = "Vasik Mansuri", email = "mansurivasik@gmail.com" }]
+keywords = ["voice-ai", "calling-agent", "telephony", "twilio", "plivo", "telnyx", "vonage", "speech-to-text", "deepgram", "rag", "email-capture", "rtp"]
+license-files = ["LICENSE", "NOTICE"]
 dependencies = []
 classifiers = [
   "Private :: Do Not Upload",
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: Apache Software License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Communications :: Telephony",
+  "Topic :: Multimedia :: Sound/Audio :: Speech",
   "Typing :: Typed",
 ]
+
+[project.urls]
+Homepage = "https://github.com/vasikmansuri/universal-calling-agent-toolkit"
+Documentation = "https://github.com/vasikmansuri/universal-calling-agent-toolkit/tree/main/docs"
+Issues = "https://github.com/vasikmansuri/universal-calling-agent-toolkit/issues"
+Source = "https://github.com/vasikmansuri/universal-calling-agent-toolkit"
 
 [project.optional-dependencies]
 # Heavy integrations stay optional. Each group is filled in by the phase that adds a verified adapter.

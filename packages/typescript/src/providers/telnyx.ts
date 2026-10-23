@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Vasik Mansuri
 /**
  * Telnyx media streaming (WebSocket).
  * Protocol: https://developers.telnyx.com/docs/voice/programmable-voice/media-streaming

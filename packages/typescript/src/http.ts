@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Vasik Mansuri
 /** Minimal injectable HTTP layer for provider REST APIs. Tests pass a mock; production uses fetch. */
 import { ProviderError, type ProviderErrorCode } from "./errors.js";
 import { isObject, type JsonObject } from "./parse.js";

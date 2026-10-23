@@ -1,4 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1280" height="320" viewBox="0 0 1280 320" role="img" aria-labelledby="title desc">
+  <!-- SPDX-License-Identifier: Apache-2.0 | Copyright 2026 Vasik Mansuri -->
   <title id="title">Universal Calling Agent Toolkit</title>
   <desc id="desc">Provider-neutral telephony, audio, email capture, STT and RAG building blocks for AI calling agents.</desc>
   <defs>

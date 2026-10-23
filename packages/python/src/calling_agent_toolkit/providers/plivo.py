@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Vasik Mansuri
 """Plivo adapters.
 
 Audio Streams: https://www.plivo.com/docs/voice/api/audio-streams

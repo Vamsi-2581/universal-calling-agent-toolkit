@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Vasik Mansuri
 """Vonage Voice API WebSockets.
 
 Protocol: https://developer.vonage.com/en/voice/voice-api/concepts/websockets

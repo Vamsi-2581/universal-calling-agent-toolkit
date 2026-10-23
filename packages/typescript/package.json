@@ -4,6 +4,33 @@
   "private": true,
   "description": "Provider-neutral telephony, audio, email-capture, STT and RAG building blocks for existing AI calling agents.",
   "license": "Apache-2.0",
+  "author": "Vasik Mansuri (https://github.com/vasikmansuri)",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vasikmansuri/universal-calling-agent-toolkit.git",
+    "directory": "packages/typescript"
+  },
+  "homepage": "https://github.com/vasikmansuri/universal-calling-agent-toolkit#readme",
+  "bugs": {
+    "url": "https://github.com/vasikmansuri/universal-calling-agent-toolkit/issues"
+  },
+  "keywords": [
+    "voice-ai",
+    "calling-agent",
+    "telephony",
+    "twilio",
+    "plivo",
+    "telnyx",
+    "vonage",
+    "media-streams",
+    "speech-to-text",
+    "deepgram",
+    "rag",
+    "email-capture",
+    "noise-suppression",
+    "rtp",
+    "webrtc"
+  ],
   "type": "module",
   "engines": {
     "node": ">=20"
@@ -35,7 +62,10 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "README.md",
+    "LICENSE",
+    "NOTICE"
   ],
   "sideEffects": false,
   "scripts": {

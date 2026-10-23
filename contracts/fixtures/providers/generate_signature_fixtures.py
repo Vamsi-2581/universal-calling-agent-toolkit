@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Vasik Mansuri
 """Generate webhook-signature fixtures using the official Twilio and Plivo Python SDKs as the reference.
 
 Run from the repository root:

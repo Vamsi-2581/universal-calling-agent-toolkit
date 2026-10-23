@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Vasik Mansuri
 /**
  * Provider-neutral transports for providers without a dedicated adapter:
  * - GenericJsonMediaTransport: configurable JSON-over-WebSocket parser (receive-only).

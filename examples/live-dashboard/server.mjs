@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Vasik Mansuri
 // Live call dashboard: drives a simulated Twilio call through the real toolkit code and streams
 // every normalized event to the browser over Server-Sent Events.
 //

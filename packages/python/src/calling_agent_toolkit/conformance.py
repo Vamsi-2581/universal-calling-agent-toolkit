@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Vasik Mansuri
 """Framework-agnostic conformance checks every JSON media adapter must pass.
 
 Wrap them in your test runner, e.g. with pytest:

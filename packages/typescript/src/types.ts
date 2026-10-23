@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Vasik Mansuri
 // Core types. The wire form of each type is defined in contracts/schemas/core.schema.json;
 // keep the two in sync (contracts.test.ts checks the enums).
 

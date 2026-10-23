@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Vasik Mansuri
 // End-to-end example: recording -> audio pipeline -> STT -> transcript -> email capture + RAG.
 // Run after `npm run build` in packages/typescript:  node examples/typescript/end-to-end.mjs
 //

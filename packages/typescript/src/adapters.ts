@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Vasik Mansuri
 import { requireCapability, undeclaredCapabilities } from "./capabilities.js";
 import { ProviderError } from "./errors.js";
 import type {

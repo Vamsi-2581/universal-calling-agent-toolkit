@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Vasik Mansuri
 /**
  * Provider-neutral retrieval for an existing agent. The toolkit retrieves and grounds; it never writes
  * the answer. Access control is enforced here even if the backend also filters.
