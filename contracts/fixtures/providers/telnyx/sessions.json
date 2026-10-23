@@ -1,0 +1,58 @@
+{
+  "description": "Telnyx media streaming sessions. Shapes follow https://developers.telnyx.com/docs/voice/programmable-voice/media-streaming. Same runner rules as twilio/sessions.json. Telnyx does not document the unit of media.timestamp, so frames carry timestampKind none and are ordered by chunk; start does not list tracks, so the session's `tracks` option (default inbound) is reported.",
+  "cases": [
+    {
+      "name": "inbound PCMU stream with dtmf, provider error and stop",
+      "options": {},
+      "steps": [
+        { "receive": { "event": "connected", "version": "1.0.0" } },
+        { "receive": { "event": "start", "sequence_number": "1", "start": { "user_id": "u-1", "call_control_id": "v3:abc", "call_session_id": "sess-1", "from": "+15551234567", "to": "+15557654321", "client_state": "aGk=", "media_format": { "encoding": "PCMU", "sample_rate": 8000, "channels": 1 } }, "stream_id": "32de0dea-53cb-4b21-89a4-9610b9e9b4f6" } },
+        { "receive": { "event": "media", "sequence_number": "4", "media": { "track": "inbound", "chunk": "2", "timestamp": "5", "payload": "//////////8=" }, "stream_id": "32de0dea-53cb-4b21-89a4-9610b9e9b4f6" } },
+        { "receive": { "event": "dtmf", "stream_id": "32de0dea-53cb-4b21-89a4-9610b9e9b4f6", "occurred_at": "2026-10-23T00:00:00.000Z", "sequence_number": "5", "dtmf": { "digit": "1" } } },
+        { "receive": { "event": "error", "stream_id": "32de0dea-53cb-4b21-89a4-9610b9e9b4f6", "payload": { "code": 100005, "title": "rate_limit_reached", "detail": "Too many requests" } } },
+        { "action": { "op": "sendMark", "name": "m1" }, "expectError": "invalid_configuration" },
+        { "receive": { "event": "stop", "sequence_number": "6", "stop": { "user_id": "u-1", "call_control_id": "v3:abc" }, "stream_id": "32de0dea-53cb-4b21-89a4-9610b9e9b4f6" } }
+      ],
+      "expectEvents": [
+        { "type": "stream_started", "provider": "telnyx", "callId": "v3:abc", "sessionId": "32de0dea-53cb-4b21-89a4-9610b9e9b4f6", "receivedAtMs": 1000, "providerSequence": 1, "tracks": ["inbound"], "format": { "encoding": "mulaw", "sampleRate": 8000, "channels": 1 }, "bidirectional": null, "customParameters": { "from": "+15551234567", "to": "+15557654321", "clientState": "aGk=" } },
+        { "type": "audio", "provider": "telnyx", "callId": "v3:abc", "sessionId": "32de0dea-53cb-4b21-89a4-9610b9e9b4f6", "receivedAtMs": 1000, "providerSequence": 4, "frame": { "callId": "v3:abc", "sessionId": "32de0dea-53cb-4b21-89a4-9610b9e9b4f6", "provider": "telnyx", "direction": "inbound", "format": { "encoding": "mulaw", "sampleRate": 8000, "channels": 1 }, "payloadBase64": "//////////8=", "timestampMs": null, "timestampKind": "none", "sequenceNumber": 4, "chunk": 2, "isCompleteFrame": false } },
+        { "type": "dtmf", "provider": "telnyx", "callId": "v3:abc", "sessionId": "32de0dea-53cb-4b21-89a4-9610b9e9b4f6", "receivedAtMs": 1000, "providerSequence": 5, "digit": "1", "direction": "inbound" },
+        { "type": "error", "provider": "telnyx", "callId": "v3:abc", "sessionId": "32de0dea-53cb-4b21-89a4-9610b9e9b4f6", "receivedAtMs": 1000, "providerSequence": null, "error": { "code": "rate_limited", "message": "Telnyx stream error 100005: rate_limit_reached", "provider": "telnyx", "retryable": true, "providerCode": "100005", "callId": "v3:abc", "sessionId": "32de0dea-53cb-4b21-89a4-9610b9e9b4f6" } },
+        { "type": "stream_stopped", "provider": "telnyx", "callId": "v3:abc", "sessionId": "32de0dea-53cb-4b21-89a4-9610b9e9b4f6", "receivedAtMs": 1000, "providerSequence": 6, "reason": "provider_stop" }
+      ]
+    },
+    {
+      "name": "bidirectional playback, marks and clear",
+      "options": { "bidirectional": true },
+      "steps": [
+        { "receive": { "event": "start", "sequence_number": "1", "start": { "call_control_id": "v3:def", "from": "+15551234567", "to": "+15557654321", "media_format": { "encoding": "PCMU", "sample_rate": 8000, "channels": 1 } }, "stream_id": "s2" } },
+        { "action": { "op": "sendAudio", "payloadBase64": "//////////8=", "format": { "encoding": "mulaw", "sampleRate": 8000, "channels": 1 } }, "expectSent": { "event": "media", "media": { "payload": "//////////8=" } } },
+        { "action": { "op": "sendMark", "name": "m1" }, "expectSent": { "event": "mark", "mark": { "name": "m1" } } },
+        { "receive": { "event": "mark", "stream_id": "s2", "mark": { "name": "m1" } } },
+        { "action": { "op": "clearPlayback" }, "expectSent": { "event": "clear" } },
+        { "action": { "op": "sendAudio", "payloadBase64": "AAA=", "format": { "encoding": "pcm_s16le", "sampleRate": 16000, "channels": 1 } }, "expectError": "unsupported_format" },
+        { "action": { "op": "sendDtmf", "digits": "1" }, "expectError": "unsupported_capability" }
+      ],
+      "expectEvents": [
+        { "type": "stream_started", "provider": "telnyx", "callId": "v3:def", "sessionId": "s2", "receivedAtMs": 1000, "providerSequence": 1, "tracks": ["inbound"], "format": { "encoding": "mulaw", "sampleRate": 8000, "channels": 1 }, "bidirectional": true, "customParameters": { "from": "+15551234567", "to": "+15557654321" } },
+        { "type": "playback_mark", "provider": "telnyx", "callId": "v3:def", "sessionId": "s2", "receivedAtMs": 1000, "providerSequence": null, "name": "m1" },
+        { "type": "stream_stopped", "provider": "telnyx", "callId": "v3:def", "sessionId": "s2", "receivedAtMs": 1000, "providerSequence": null, "reason": "socket_closed" }
+      ]
+    },
+    {
+      "name": "unsupported codecs, early media and foreign streams",
+      "options": {},
+      "steps": [
+        { "receive": { "event": "media", "sequence_number": "2", "media": { "track": "inbound", "chunk": "1", "payload": "fw==" }, "stream_id": "s3" }, "expectError": "protocol_violation" },
+        { "receive": { "event": "start", "sequence_number": "1", "start": { "call_control_id": "v3:ghi", "media_format": { "encoding": "OPUS", "sample_rate": 16000, "channels": 1 } }, "stream_id": "s3" }, "expectError": "unsupported_format" },
+        { "receive": { "event": "start", "sequence_number": "1", "start": { "call_control_id": "v3:ghi", "media_format": { "encoding": "L16", "sample_rate": 16000, "channels": 1 } }, "stream_id": "s3" }, "expectError": "invalid_configuration" },
+        { "receive": { "event": "start", "sequence_number": "1", "start": { "call_control_id": "v3:ghi", "media_format": { "encoding": "PCMA", "sample_rate": 8000, "channels": 1 } }, "stream_id": "s3" } },
+        { "receive": { "event": "media", "sequence_number": "2", "media": { "track": "inbound", "chunk": "1", "payload": "fw==" }, "stream_id": "other" }, "expectError": "protocol_violation" }
+      ],
+      "expectEvents": [
+        { "type": "stream_started", "provider": "telnyx", "callId": "v3:ghi", "sessionId": "s3", "receivedAtMs": 1000, "providerSequence": 1, "tracks": ["inbound"], "format": { "encoding": "alaw", "sampleRate": 8000, "channels": 1 }, "bidirectional": null },
+        { "type": "stream_stopped", "provider": "telnyx", "callId": "v3:ghi", "sessionId": "s3", "receivedAtMs": 1000, "providerSequence": null, "reason": "socket_closed" }
+      ]
+    }
+  ]
+}

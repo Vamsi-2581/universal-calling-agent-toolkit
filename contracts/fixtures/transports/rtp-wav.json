@@ -1,0 +1,187 @@
+{
+  "description": "parseRtpPacket (RFC 3550) and readWav (RIFF/WAVE) vectors as hex. RTP: header, CSRC list, header extension and padding must be removed from the payload. WAV: unknown chunks are skipped (with odd-size padding), a data size larger than the file is clamped (streaming WAVs write 0xFFFFFFFF), WAVE_FORMAT_PCM 16-bit, mu-law and A-law are read; anything else is unsupported_format.",
+  "rtp": [
+    {
+      "name": "minimal PCMU packet",
+      "hex": "80000001000000a012345678ffff",
+      "expect": {
+        "version": 2,
+        "padding": false,
+        "extension": false,
+        "csrcCount": 0,
+        "marker": false,
+        "payloadType": 0,
+        "sequenceNumber": 1,
+        "timestamp": 160,
+        "ssrc": 305419896,
+        "payloadHex": "ffff"
+      }
+    },
+    {
+      "name": "marker bit and PCMA",
+      "hex": "8088fffe0000014000000001aabb",
+      "expect": {
+        "version": 2,
+        "padding": false,
+        "extension": false,
+        "csrcCount": 0,
+        "marker": true,
+        "payloadType": 8,
+        "sequenceNumber": 65534,
+        "timestamp": 320,
+        "ssrc": 1,
+        "payloadHex": "aabb"
+      }
+    },
+    {
+      "name": "CSRC list is skipped",
+      "hex": "810000020000014000000001aabbccdd7f",
+      "expect": {
+        "version": 2,
+        "padding": false,
+        "extension": false,
+        "csrcCount": 1,
+        "marker": false,
+        "payloadType": 0,
+        "sequenceNumber": 2,
+        "timestamp": 320,
+        "ssrc": 1,
+        "payloadHex": "7f"
+      }
+    },
+    {
+      "name": "header extension is skipped",
+      "hex": "90000003000001e000000001bede0001010203047f7e",
+      "expect": {
+        "version": 2,
+        "padding": false,
+        "extension": true,
+        "csrcCount": 0,
+        "marker": false,
+        "payloadType": 0,
+        "sequenceNumber": 3,
+        "timestamp": 480,
+        "ssrc": 1,
+        "payloadHex": "7f7e"
+      }
+    },
+    {
+      "name": "padding is removed",
+      "hex": "a000000400000280000000017f7f0002",
+      "expect": {
+        "version": 2,
+        "padding": true,
+        "extension": false,
+        "csrcCount": 0,
+        "marker": false,
+        "payloadType": 0,
+        "sequenceNumber": 4,
+        "timestamp": 640,
+        "ssrc": 1,
+        "payloadHex": "7f7f"
+      }
+    },
+    {
+      "name": "too short",
+      "hex": "8000",
+      "expectError": "malformed_message"
+    },
+    {
+      "name": "wrong version",
+      "hex": "40000001000000a012345678ff",
+      "expectError": "malformed_message"
+    },
+    {
+      "name": "padding longer than payload",
+      "hex": "a00000040000028000000001ff09",
+      "expectError": "malformed_message"
+    },
+    {
+      "name": "CSRC list past the end",
+      "hex": "8200000100000000000000010000",
+      "expectError": "malformed_message"
+    },
+    {
+      "name": "extension header past the end",
+      "hex": "9000000100000000000000010001",
+      "expectError": "malformed_message"
+    }
+  ],
+  "wav": [
+    {
+      "name": "PCM 16-bit mono 8 kHz",
+      "hex": "524946462c00000057415645666d74201000000001000100401f0000803e00000200100064617461080000000100020003000400",
+      "expect": {
+        "format": {
+          "encoding": "pcm_s16le",
+          "sampleRate": 8000,
+          "channels": 1
+        },
+        "dataHex": "0100020003000400"
+      }
+    },
+    {
+      "name": "LIST chunk before data",
+      "hex": "524946463800000057415645666d74201000000001000100401f0000803e0000020010004c49535404000000494e464f64617461080000000100020003000400",
+      "expect": {
+        "format": {
+          "encoding": "pcm_s16le",
+          "sampleRate": 8000,
+          "channels": 1
+        },
+        "dataHex": "0100020003000400"
+      }
+    },
+    {
+      "name": "odd-sized chunk is padded",
+      "hex": "524946463800000057415645666d74201000000001000100401f0000803e0000020010006a756e6b030000000102030064617461080000000100020003000400",
+      "expect": {
+        "format": {
+          "encoding": "pcm_s16le",
+          "sampleRate": 8000,
+          "channels": 1
+        },
+        "dataHex": "0100020003000400"
+      }
+    },
+    {
+      "name": "mu-law with 18-byte fmt",
+      "hex": "524946462800000057415645666d74201200000007000100401f0000401f00000100080000006461746102000000ff7f",
+      "expect": {
+        "format": {
+          "encoding": "mulaw",
+          "sampleRate": 8000,
+          "channels": 1
+        },
+        "dataHex": "ff7f"
+      }
+    },
+    {
+      "name": "streaming WAV with unknown sizes",
+      "hex": "52494646ffffffff57415645666d74201000000001000100401f0000803e00000200100064617461ffffffff01000200",
+      "expect": {
+        "format": {
+          "encoding": "pcm_s16le",
+          "sampleRate": 8000,
+          "channels": 1
+        },
+        "dataHex": "01000200"
+      }
+    },
+    {
+      "name": "big-endian RIFX is refused",
+      "hex": "524946582c00000057415645",
+      "expectError": "malformed_message"
+    },
+    {
+      "name": "float samples are unsupported",
+      "hex": "524946462c00000057415645666d74201000000003000100401f000000fa00000400200064617461080000000000000000000000",
+      "expectError": "unsupported_format"
+    },
+    {
+      "name": "missing data chunk",
+      "hex": "524946461c00000057415645666d74201000000001000100401f0000803e000002001000",
+      "expectError": "malformed_message"
+    }
+  ]
+}

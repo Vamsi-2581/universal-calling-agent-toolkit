@@ -1,0 +1,41 @@
+{
+  "description": "Vonage Voice API WebSocket sessions. Shapes follow https://developer.vonage.com/en/voice/voice-api/concepts/websockets: a websocket:connected text message carrying content-type, then binary 16-bit little-endian PCM; websocket:dtmf, websocket:notify and websocket:cleared text events; notify and clear actions. Vonage sends no call id on the socket, so the host passes callId/sessionId. `receiveBinaryHex` sends a binary message; `expectSentBinaryHex` checks the last binary message written.",
+  "cases": [
+    {
+      "name": "handshake, audio, dtmf, notify and clear",
+      "options": { "callId": "vonage-call-1", "sessionId": "ws-1" },
+      "steps": [
+        { "receiveBinaryHex": "0000", "expectError": "protocol_violation" },
+        { "receive": { "event": "websocket:connected", "content-type": "audio/l16;rate=16000", "tenant": "acme", "retries": 2 } },
+        { "receiveBinaryHex": "01000200" },
+        { "receiveBinaryHex": "010002", "expectError": "malformed_message" },
+        { "receive": { "event": "websocket:dtmf", "digit": "5", "duration": 260 } },
+        { "action": { "op": "sendMark", "name": "m1" }, "expectSent": { "action": "notify", "payload": { "name": "m1" } } },
+        { "receive": { "event": "websocket:notify", "payload": { "name": "m1" } } },
+        { "action": { "op": "clearPlayback" }, "expectSent": { "action": "clear" } },
+        { "receive": { "event": "websocket:cleared" } },
+        { "action": { "op": "sendAudio", "payloadBase64": "AQACAAMABAA=", "format": { "encoding": "pcm_s16le", "sampleRate": 16000, "channels": 1 } }, "expectSentBinaryHex": "0100020003000400" },
+        { "action": { "op": "sendAudio", "payloadBase64": "AQA=", "format": { "encoding": "pcm_s16le", "sampleRate": 8000, "channels": 1 } }, "expectError": "unsupported_format" },
+        { "action": { "op": "sendDtmf", "digits": "1" }, "expectError": "unsupported_capability" },
+        { "receive": { "event": "websocket:connected", "content-type": "audio/l16;rate=16000" }, "expectError": "protocol_violation" }
+      ],
+      "expectEvents": [
+        { "type": "stream_started", "provider": "vonage", "callId": "vonage-call-1", "sessionId": "ws-1", "receivedAtMs": 1000, "providerSequence": null, "tracks": ["inbound"], "format": { "encoding": "pcm_s16le", "sampleRate": 16000, "channels": 1 }, "bidirectional": true, "customParameters": { "tenant": "acme" } },
+        { "type": "audio", "provider": "vonage", "callId": "vonage-call-1", "sessionId": "ws-1", "receivedAtMs": 1000, "providerSequence": null, "frame": { "callId": "vonage-call-1", "sessionId": "ws-1", "provider": "vonage", "direction": "inbound", "format": { "encoding": "pcm_s16le", "sampleRate": 16000, "channels": 1 }, "payloadBase64": "AQACAA==", "timestampMs": 0, "timestampKind": "stream_relative_ms", "sequenceNumber": null, "chunk": 0, "isCompleteFrame": false } },
+        { "type": "dtmf", "provider": "vonage", "callId": "vonage-call-1", "sessionId": "ws-1", "receivedAtMs": 1000, "providerSequence": null, "digit": "5", "direction": "inbound" },
+        { "type": "playback_mark", "provider": "vonage", "callId": "vonage-call-1", "sessionId": "ws-1", "receivedAtMs": 1000, "providerSequence": null, "name": "m1" },
+        { "type": "playback_cleared", "provider": "vonage", "callId": "vonage-call-1", "sessionId": "ws-1", "receivedAtMs": 1000, "providerSequence": null },
+        { "type": "stream_stopped", "provider": "vonage", "callId": "vonage-call-1", "sessionId": "ws-1", "receivedAtMs": 1000, "providerSequence": null, "reason": "socket_closed" }
+      ]
+    },
+    {
+      "name": "unsupported content-type is refused",
+      "options": { "callId": "vonage-call-2", "sessionId": "ws-2" },
+      "steps": [
+        { "receive": { "event": "websocket:connected", "content-type": "audio/l16;rate=11025" }, "expectError": "unsupported_format" },
+        { "receive": { "event": "websocket:connected", "content-type": "audio/x-mulaw" }, "expectError": "unsupported_format" }
+      ],
+      "expectEvents": []
+    }
+  ]
+}

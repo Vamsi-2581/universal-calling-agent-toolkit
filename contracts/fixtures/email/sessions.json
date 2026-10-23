@@ -1,0 +1,94 @@
+{
+  "description": "EmailCapture sessions. Defaults: tenantId t1, sessionId s1, kind final, revision 0, confidence null, receivedAtMs 0. Each step is an `event` or an `action` (questionAsked | confirm | reject) run on `engine` (A by default; A and B share one store). `expect` is the result list; `expectState` compares status/email/candidate.",
+  "cases": [
+    {
+      "name": "captures when first spoken, then confirms",
+      "steps": [
+        { "event": { "eventId": "e1", "turnId": "u1", "text": "my email is john dot smith at gmail dot com" }, "expect": [ { "type": "candidate", "email": "john.smith@gmail.com", "literal": false, "turnId": "u1", "replacesConfirmed": false } ], "expectState": { "status": "candidate", "email": null, "candidate": "john.smith@gmail.com" } },
+        { "action": "confirm", "expect": [ { "type": "confirmed", "email": "john.smith@gmail.com" } ], "expectState": { "status": "confirmed", "email": "john.smith@gmail.com", "candidate": null } }
+      ]
+    },
+    {
+      "name": "respects a refusal, then accepts a later volunteered address",
+      "steps": [
+        { "action": "questionAsked", "expect": [], "expectState": { "status": "asked", "email": null, "candidate": null } },
+        { "event": { "eventId": "e1", "turnId": "u1", "text": "I'd rather not say" }, "expect": [ { "type": "declined", "deferred": false, "turnId": "u1" } ], "expectState": { "status": "declined", "email": null, "candidate": null } },
+        { "event": { "eventId": "e2", "turnId": "u2", "text": "what are your hours" }, "expect": [] },
+        { "event": { "eventId": "e3", "turnId": "u3", "text": "oh, you can use anna at example dot com" }, "expect": [ { "type": "candidate", "email": "anna@example.com", "literal": false, "turnId": "u3", "replacesConfirmed": false } ] }
+      ]
+    },
+    {
+      "name": "a deferral is reported as deferred",
+      "steps": [
+        { "action": "questionAsked", "expect": [] },
+        { "event": { "eventId": "e1", "turnId": "u1", "text": "can I give it to you later" }, "expect": [ { "type": "declined", "deferred": true, "turnId": "u1" } ] }
+      ]
+    },
+    {
+      "name": "refusal words are ignored when the question was not asked",
+      "steps": [
+        { "event": { "eventId": "e1", "turnId": "u1", "text": "I'd rather not wait" }, "expect": [], "expectState": { "status": "none", "email": null, "candidate": null } }
+      ]
+    },
+    {
+      "name": "partials are ignored and duplicates are dropped",
+      "steps": [
+        { "event": { "eventId": "e1", "turnId": "u1", "kind": "partial", "text": "my email is john dot" }, "expect": [] },
+        { "event": { "eventId": "e2", "turnId": "u1", "text": "my email is john dot smith at gmail dot com" }, "expect": [ { "type": "candidate", "email": "john.smith@gmail.com", "literal": false, "turnId": "u1", "replacesConfirmed": false } ] },
+        { "event": { "eventId": "e2", "turnId": "u1", "text": "my email is john dot smith at gmail dot com" }, "expect": [] },
+        { "event": { "eventId": "e3", "turnId": "u1", "text": "my email is john dot smith at gmail dot com" }, "expect": [] }
+      ]
+    },
+    {
+      "name": "a revised final for the same turn replaces the candidate",
+      "steps": [
+        { "event": { "eventId": "e1", "turnId": "u1", "text": "my email is jon at gmail dot com" }, "expect": [ { "type": "candidate", "email": "jon@gmail.com", "literal": false, "turnId": "u1", "replacesConfirmed": false } ] },
+        { "event": { "eventId": "e2", "turnId": "u1", "revision": 1, "text": "my email is john at gmail dot com" }, "expect": [ { "type": "candidate", "email": "john@gmail.com", "literal": false, "turnId": "u1", "replacesConfirmed": false } ] },
+        { "event": { "eventId": "e3", "turnId": "u1", "revision": 0, "text": "my email is jon at gmail dot com" }, "expect": [], "expectState": { "status": "candidate", "email": null, "candidate": "john@gmail.com" } }
+      ]
+    },
+    {
+      "name": "a confirmed address is protected from uncertain replacement",
+      "steps": [
+        { "event": { "eventId": "e1", "turnId": "u1", "text": "my email is a at x dot com" }, "expect": [ { "type": "candidate", "email": "a@x.com", "literal": false, "turnId": "u1", "replacesConfirmed": false } ] },
+        { "action": "confirm", "expect": [ { "type": "confirmed", "email": "a@x.com" } ] },
+        { "event": { "eventId": "e2", "turnId": "u2", "text": "my email is b at x dot com" }, "expect": [ { "type": "kept_confirmed", "email": "a@x.com", "heard": "b@x.com", "turnId": "u2" } ], "expectState": { "status": "confirmed", "email": "a@x.com", "candidate": null } },
+        { "event": { "eventId": "e3", "turnId": "u3", "text": "my email is a at x dot com" }, "expect": [] },
+        { "event": { "eventId": "e4", "turnId": "u4", "text": "actually my email is b at x dot com" }, "expect": [ { "type": "candidate", "email": "b@x.com", "literal": false, "turnId": "u4", "replacesConfirmed": true } ], "expectState": { "status": "candidate", "email": "a@x.com", "candidate": "b@x.com" } },
+        { "action": "confirm", "expect": [ { "type": "confirmed", "email": "b@x.com" } ], "expectState": { "status": "confirmed", "email": "b@x.com", "candidate": null } }
+      ]
+    },
+    {
+      "name": "asks for clarification instead of guessing",
+      "steps": [
+        { "event": { "eventId": "e1", "turnId": "u1", "text": "my email is john at gmail" }, "expect": [ { "type": "clarification_needed", "reason": "incomplete_domain", "heard": "john@gmail", "turnId": "u1" } ], "expectState": { "status": "none", "email": null, "candidate": null } },
+        { "event": { "eventId": "e2", "turnId": "u2", "text": "my email is john at gmail dot com", "confidence": 0.3 }, "expect": [ { "type": "clarification_needed", "reason": "low_confidence", "heard": "john@gmail.com", "turnId": "u2" } ], "expectState": { "status": "none", "email": null, "candidate": null } }
+      ]
+    },
+    {
+      "name": "reject clears the candidate and returns to asking",
+      "steps": [
+        { "event": { "eventId": "e1", "turnId": "u1", "text": "my email is jon at gmail dot com" }, "expect": [ { "type": "candidate", "email": "jon@gmail.com", "literal": false, "turnId": "u1", "replacesConfirmed": false } ] },
+        { "action": "reject", "expect": [], "expectState": { "status": "asked", "email": null, "candidate": null } },
+        { "action": "confirm", "expect": [] }
+      ]
+    },
+    {
+      "name": "state is isolated by tenant and session",
+      "steps": [
+        { "event": { "eventId": "e1", "turnId": "u1", "text": "my email is a at x dot com" }, "expect": [ { "type": "candidate", "email": "a@x.com", "literal": false, "turnId": "u1", "replacesConfirmed": false } ] },
+        { "action": "confirm", "tenantId": "t2", "expect": [], "expectState": { "status": "none", "email": null, "candidate": null } },
+        { "action": "confirm", "sessionId": "s2", "expect": [], "expectState": { "status": "none", "email": null, "candidate": null } },
+        { "event": { "eventId": "e1", "turnId": "u1", "tenantId": "t2", "text": "my email is b at x dot com" }, "expect": [ { "type": "candidate", "email": "b@x.com", "literal": false, "turnId": "u1", "replacesConfirmed": false } ] }
+      ]
+    },
+    {
+      "name": "state persists across engine instances sharing a store",
+      "steps": [
+        { "event": { "eventId": "e1", "turnId": "u1", "text": "my email is a at x dot com" }, "expect": [ { "type": "candidate", "email": "a@x.com", "literal": false, "turnId": "u1", "replacesConfirmed": false } ] },
+        { "engine": "B", "action": "confirm", "expect": [ { "type": "confirmed", "email": "a@x.com" } ] },
+        { "engine": "B", "event": { "eventId": "e1", "turnId": "u1", "text": "my email is a at x dot com" }, "expect": [], "expectState": { "status": "confirmed", "email": "a@x.com", "candidate": null } }
+      ]
+    }
+  ]
+}

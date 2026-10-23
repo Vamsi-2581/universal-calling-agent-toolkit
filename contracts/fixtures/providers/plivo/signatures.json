@@ -1,0 +1,109 @@
+{
+  "description": "plivo webhook signature cases. `valid` and every signature were produced by plivo.utils.signature_v3 (official plivo-python SDK).",
+  "cases": [
+    {
+      "name": "post with query and form params",
+      "authToken": "plivo-test-token-not-real",
+      "request": {
+        "method": "POST",
+        "url": "https://example.com/answer?b=2&a=1",
+        "headers": {
+          "X-Plivo-Signature-V3": "ZlsQc/WtGJr/f02d7rhlo3w54+M7ke5lnaNKUWAty28=",
+          "X-Plivo-Signature-V3-Nonce": "05429567804466091622",
+          "content-type": "application/x-www-form-urlencoded"
+        },
+        "rawBody": "CallUUID=11111111-2222-3333-4444-555555555555&From=15551234567&To=15557654321&Event=StartApp"
+      },
+      "valid": true
+    },
+    {
+      "name": "post without query",
+      "authToken": "plivo-test-token-not-real",
+      "request": {
+        "method": "POST",
+        "url": "https://example.com/answer",
+        "headers": {
+          "X-Plivo-Signature-V3": "0FPazZNIYa5OnX7vmSLixFUnAJSaT+9oTiSQNPWWyyE=",
+          "X-Plivo-Signature-V3-Nonce": "05429567804466091622",
+          "content-type": "application/x-www-form-urlencoded"
+        },
+        "rawBody": "CallUUID=11111111-2222-3333-4444-555555555555&From=15551234567&To=15557654321&Event=StartApp"
+      },
+      "valid": true
+    },
+    {
+      "name": "post with query, empty body",
+      "authToken": "plivo-test-token-not-real",
+      "request": {
+        "method": "POST",
+        "url": "https://example.com/answer?b=2&a=1",
+        "headers": {
+          "X-Plivo-Signature-V3": "g35So6PEDIqKYNJ1YlyqUd5MiDuen9l2o0eP7fXNWbo=",
+          "X-Plivo-Signature-V3-Nonce": "05429567804466091622",
+          "content-type": "application/x-www-form-urlencoded"
+        },
+        "rawBody": ""
+      },
+      "valid": true
+    },
+    {
+      "name": "get with query",
+      "authToken": "plivo-test-token-not-real",
+      "request": {
+        "method": "GET",
+        "url": "https://example.com/hangup?CallUUID=abc&Duration=12",
+        "headers": {
+          "X-Plivo-Signature-V3": "5NRw8RZMycCjyJK6wfmTo1LxQiGkj9Y98MhNmtNHCtU=",
+          "X-Plivo-Signature-V3-Nonce": "05429567804466091622"
+        },
+        "rawBody": ""
+      },
+      "valid": true
+    },
+    {
+      "name": "one of several signatures matches",
+      "authToken": "plivo-test-token-not-real",
+      "request": {
+        "method": "POST",
+        "url": "https://example.com/answer?b=2&a=1",
+        "headers": {
+          "X-Plivo-Signature-V3": "bm90LWEtc2lnbmF0dXJl,ZlsQc/WtGJr/f02d7rhlo3w54+M7ke5lnaNKUWAty28=",
+          "X-Plivo-Signature-V3-Nonce": "05429567804466091622",
+          "content-type": "application/x-www-form-urlencoded"
+        },
+        "rawBody": "CallUUID=11111111-2222-3333-4444-555555555555&From=15551234567&To=15557654321&Event=StartApp"
+      },
+      "valid": true
+    },
+    {
+      "name": "tampered body",
+      "authToken": "plivo-test-token-not-real",
+      "request": {
+        "method": "POST",
+        "url": "https://example.com/answer?b=2&a=1",
+        "headers": {
+          "X-Plivo-Signature-V3": "ZlsQc/WtGJr/f02d7rhlo3w54+M7ke5lnaNKUWAty28=",
+          "X-Plivo-Signature-V3-Nonce": "05429567804466091622",
+          "content-type": "application/x-www-form-urlencoded"
+        },
+        "rawBody": "CallUUID=11111111-2222-3333-4444-555555555555&From=15551234567&To=15557654321&Event=Hangup"
+      },
+      "valid": false
+    },
+    {
+      "name": "wrong token",
+      "authToken": "plivo-test-token-not-real",
+      "request": {
+        "method": "POST",
+        "url": "https://example.com/answer?b=2&a=1",
+        "headers": {
+          "X-Plivo-Signature-V3": "V+eL8O7zP+i/9KK2/T8FOzzAyuv1YSFb27kK3eXj8YY=",
+          "X-Plivo-Signature-V3-Nonce": "05429567804466091622",
+          "content-type": "application/x-www-form-urlencoded"
+        },
+        "rawBody": "CallUUID=11111111-2222-3333-4444-555555555555&From=15551234567&To=15557654321&Event=StartApp"
+      },
+      "valid": false
+    }
+  ]
+}

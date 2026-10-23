@@ -1,0 +1,116 @@
+{
+  "description": "TwilioCallControl REST operations against a mock HTTP client. Endpoints and parameters follow https://www.twilio.com/docs/voice/api/call-resource and https://www.twilio.com/docs/voice/api/stream-resource. `expectRequest: null` means no HTTP request may be sent. Form bodies are compared exactly; `auth` is Basic accountSid:authToken. Webhook parsing uses a clock fixed at 1000.",
+  "config": { "accountSid": "AC00000000000000000000000000000001", "authToken": "twilio-test-token-not-real" },
+  "cases": [
+    {
+      "name": "outbound call with status callbacks",
+      "op": "startOutboundCall",
+      "args": { "to": "+15557654321", "from": "+15551234567", "answer": { "url": "https://example.com/voice", "statusCallback": "https://example.com/status", "statusCallbackEvents": ["initiated", "completed"] } },
+      "expectRequest": { "method": "POST", "url": "https://api.twilio.com/2010-04-01/Accounts/AC00000000000000000000000000000001/Calls.json", "contentType": "application/x-www-form-urlencoded", "body": "To=%2B15557654321&From=%2B15551234567&Url=https%3A%2F%2Fexample.com%2Fvoice&StatusCallback=https%3A%2F%2Fexample.com%2Fstatus&StatusCallbackEvent=initiated&StatusCallbackEvent=completed" },
+      "response": { "status": 201, "body": "{\"sid\":\"CA00000000000000000000000000000002\",\"status\":\"queued\"}" },
+      "expect": { "callId": "CA00000000000000000000000000000002", "provider": "twilio", "direction": "outbound", "status": "queued", "from": "+15551234567", "to": "+15557654321" }
+    },
+    {
+      "name": "inline TwiML outbound call",
+      "op": "startOutboundCall",
+      "args": { "to": "+15557654321", "from": "+15551234567", "answer": { "twiml": "<Response><Say>Hi</Say></Response>" } },
+      "expectRequest": { "method": "POST", "url": "https://api.twilio.com/2010-04-01/Accounts/AC00000000000000000000000000000001/Calls.json", "contentType": "application/x-www-form-urlencoded", "body": "To=%2B15557654321&From=%2B15551234567&Twiml=%3CResponse%3E%3CSay%3EHi%3C%2FSay%3E%3C%2FResponse%3E" },
+      "response": { "status": 201, "body": "{\"sid\":\"CA00000000000000000000000000000003\",\"status\":\"queued\"}" },
+      "expect": { "callId": "CA00000000000000000000000000000003", "provider": "twilio", "direction": "outbound", "status": "queued", "from": "+15551234567", "to": "+15557654321" }
+    },
+    {
+      "name": "url and twiml together are refused before sending",
+      "op": "startOutboundCall",
+      "args": { "to": "+15557654321", "from": "+15551234567", "answer": { "url": "https://example.com/voice", "twiml": "<Response/>" } },
+      "expectRequest": null,
+      "expectError": "invalid_configuration"
+    },
+    {
+      "name": "end call",
+      "op": "endCall",
+      "args": { "callId": "CA00000000000000000000000000000002" },
+      "expectRequest": { "method": "POST", "url": "https://api.twilio.com/2010-04-01/Accounts/AC00000000000000000000000000000001/Calls/CA00000000000000000000000000000002.json", "contentType": "application/x-www-form-urlencoded", "body": "Status=completed" },
+      "response": { "status": 200, "body": "{\"sid\":\"CA00000000000000000000000000000002\",\"status\":\"completed\"}" },
+      "expect": null
+    },
+    {
+      "name": "transfer by redirecting to <Dial>",
+      "op": "transferCall",
+      "args": { "callId": "CA00000000000000000000000000000002", "target": { "to": "+15550001111" } },
+      "expectRequest": { "method": "POST", "url": "https://api.twilio.com/2010-04-01/Accounts/AC00000000000000000000000000000001/Calls/CA00000000000000000000000000000002.json", "contentType": "application/x-www-form-urlencoded", "body": "Twiml=%3CResponse%3E%3CDial%3E%2B15550001111%3C%2FDial%3E%3C%2FResponse%3E" },
+      "response": { "status": 200, "body": "{\"sid\":\"CA00000000000000000000000000000002\",\"status\":\"in-progress\"}" },
+      "expect": null
+    },
+    {
+      "name": "start a unidirectional stream with custom parameters",
+      "op": "startMediaStream",
+      "args": { "callId": "CA00000000000000000000000000000002", "request": { "url": "wss://example.com/media", "tracks": ["inbound", "outbound"], "bidirectional": false, "providerOptions": { "name": "agent", "statusCallback": "https://example.com/stream-status", "customParameters": { "tenant": "acme" } } } },
+      "expectRequest": { "method": "POST", "url": "https://api.twilio.com/2010-04-01/Accounts/AC00000000000000000000000000000001/Calls/CA00000000000000000000000000000002/Streams.json", "contentType": "application/x-www-form-urlencoded", "body": "Url=wss%3A%2F%2Fexample.com%2Fmedia&Track=both_tracks&Name=agent&StatusCallback=https%3A%2F%2Fexample.com%2Fstream-status&Parameter1.Name=tenant&Parameter1.Value=acme" },
+      "response": { "status": 201, "body": "{\"sid\":\"MZ00000000000000000000000000000005\",\"call_sid\":\"CA00000000000000000000000000000002\",\"status\":\"in-progress\"}" },
+      "expect": { "callId": "CA00000000000000000000000000000002", "streamId": "MZ00000000000000000000000000000005" }
+    },
+    {
+      "name": "bidirectional REST streams are refused",
+      "op": "startMediaStream",
+      "args": { "callId": "CA00000000000000000000000000000002", "request": { "url": "wss://example.com/media", "tracks": ["inbound"], "bidirectional": true } },
+      "expectRequest": null,
+      "expectError": "invalid_configuration"
+    },
+    {
+      "name": "stop a stream",
+      "op": "stopMediaStream",
+      "args": { "callId": "CA00000000000000000000000000000002", "streamId": "MZ00000000000000000000000000000005" },
+      "expectRequest": { "method": "POST", "url": "https://api.twilio.com/2010-04-01/Accounts/AC00000000000000000000000000000001/Calls/CA00000000000000000000000000000002/Streams/MZ00000000000000000000000000000005.json", "contentType": "application/x-www-form-urlencoded", "body": "Status=stopped" },
+      "response": { "status": 200, "body": "{\"sid\":\"MZ00000000000000000000000000000005\",\"status\":\"stopped\"}" },
+      "expect": null
+    },
+    {
+      "name": "authentication errors keep Twilio's code",
+      "op": "endCall",
+      "args": { "callId": "CA00000000000000000000000000000002" },
+      "expectRequest": { "method": "POST", "url": "https://api.twilio.com/2010-04-01/Accounts/AC00000000000000000000000000000001/Calls/CA00000000000000000000000000000002.json", "contentType": "application/x-www-form-urlencoded", "body": "Status=completed" },
+      "response": { "status": 401, "body": "{\"code\":20003,\"message\":\"Authenticate\",\"status\":401}" },
+      "expectError": "authentication_failed",
+      "expectProviderCode": "20003"
+    },
+    {
+      "name": "rate limiting is retryable",
+      "op": "endCall",
+      "args": { "callId": "CA00000000000000000000000000000002" },
+      "expectRequest": { "method": "POST", "url": "https://api.twilio.com/2010-04-01/Accounts/AC00000000000000000000000000000001/Calls/CA00000000000000000000000000000002.json", "contentType": "application/x-www-form-urlencoded", "body": "Status=completed" },
+      "response": { "status": 429, "body": "{\"code\":20429,\"message\":\"Too Many Requests\"}" },
+      "expectError": "rate_limited",
+      "expectRetryable": true
+    },
+    {
+      "name": "server errors are provider_unavailable",
+      "op": "endCall",
+      "args": { "callId": "CA00000000000000000000000000000002" },
+      "expectRequest": { "method": "POST", "url": "https://api.twilio.com/2010-04-01/Accounts/AC00000000000000000000000000000001/Calls/CA00000000000000000000000000000002.json", "contentType": "application/x-www-form-urlencoded", "body": "Status=completed" },
+      "response": { "status": 503, "body": "upstream down" },
+      "expectError": "provider_unavailable",
+      "expectRetryable": true
+    },
+    {
+      "name": "REST DTMF is not offered",
+      "op": "sendDtmf",
+      "args": { "callId": "CA00000000000000000000000000000002", "digits": "1" },
+      "expectRequest": null,
+      "expectError": "unsupported_capability"
+    },
+    {
+      "name": "status callback becomes call_status",
+      "op": "parseWebhook",
+      "args": { "rawBody": "CallSid=CA00000000000000000000000000000002&CallStatus=no-answer&SequenceNumber=3" },
+      "expectRequest": null,
+      "expect": [ { "type": "call_status", "provider": "twilio", "callId": "CA00000000000000000000000000000002", "sessionId": "CA00000000000000000000000000000002", "receivedAtMs": 1000, "providerSequence": 3, "status": "no_answer", "providerStatus": "no-answer" } ]
+    },
+    {
+      "name": "status callback without CallStatus is malformed",
+      "op": "parseWebhook",
+      "args": { "rawBody": "CallSid=CA00000000000000000000000000000002" },
+      "expectRequest": null,
+      "expectError": "malformed_message"
+    }
+  ]
+}

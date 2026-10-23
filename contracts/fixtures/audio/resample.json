@@ -1,0 +1,11 @@
+{
+  "description": "LinearResampler vectors. Output sample n reads input position p = n*from/to (i = floor(p), r = n*from mod to) and is floor((2*(s[i]*(to-r) + s[i+1]*r) + to) / (2*to)), all in integer arithmetic. Streaming push() emits while s[i+1] is available; flush() emits the rest holding the last sample. `chunks` gives split points for the streaming check, whose concatenated output must equal `output`.",
+  "cases": [
+    { "name": "8k to 16k ramp", "from": 8000, "to": 16000, "input": [0, 100, 200], "output": [0, 50, 100, 150, 200, 200], "chunks": [1, 2] },
+    { "name": "8k to 24k rounding", "from": 8000, "to": 24000, "input": [0, 1], "output": [0, 0, 1, 1, 1, 1], "chunks": [1] },
+    { "name": "negative values round down", "from": 8000, "to": 24000, "input": [-1, 0], "output": [-1, -1, 0, 0, 0, 0], "chunks": [1] },
+    { "name": "16k to 8k decimates", "from": 16000, "to": 8000, "input": [0, 10, 20, 30], "output": [0, 20], "chunks": [3] },
+    { "name": "extremes do not overflow", "from": 8000, "to": 16000, "input": [-32768, 32767], "output": [-32768, 0, 32767, 32767], "chunks": [1] },
+    { "name": "same rate passes through", "from": 16000, "to": 16000, "input": [5, -5, 7], "output": [5, -5, 7], "chunks": [2] }
+  ]
+}

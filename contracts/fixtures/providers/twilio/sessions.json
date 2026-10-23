@@ -1,0 +1,80 @@
+{
+  "description": "Twilio Media Streams sessions. Message shapes follow https://www.twilio.com/docs/voice/media-streams/websocket-messages. Runner: create a session with `options` and a clock fixed at 1000 ms, apply `steps` in order, call close(), then drain events and compare to `expectEvents` (wire form). `expectSent` is the JSON the adapter must write to the connection.",
+  "cases": [
+    {
+      "name": "unidirectional inbound stream",
+      "options": {},
+      "steps": [
+        { "receive": { "event": "connected", "protocol": "Call", "version": "1.0.0" } },
+        { "receive": { "event": "start", "sequenceNumber": "1", "start": { "accountSid": "AC00000000000000000000000000000001", "streamSid": "MZ00000000000000000000000000000001", "callSid": "CA00000000000000000000000000000001", "tracks": ["inbound"], "customParameters": { "FirstName": "Jane" }, "mediaFormat": { "encoding": "audio/x-mulaw", "sampleRate": 8000, "channels": 1 } }, "streamSid": "MZ00000000000000000000000000000001" } },
+        { "receive": { "event": "media", "sequenceNumber": "2", "media": { "track": "inbound", "chunk": "1", "timestamp": "5", "payload": "//////////8=" }, "streamSid": "MZ00000000000000000000000000000001" } },
+        { "action": { "op": "sendMark", "name": "m1" }, "expectError": "invalid_configuration" },
+        { "receive": { "event": "stop", "sequenceNumber": "3", "stop": { "accountSid": "AC00000000000000000000000000000001", "callSid": "CA00000000000000000000000000000001" }, "streamSid": "MZ00000000000000000000000000000001" } },
+        { "receive": { "event": "media", "sequenceNumber": "4", "media": { "track": "inbound", "chunk": "2", "timestamp": "25", "payload": "//////////8=" }, "streamSid": "MZ00000000000000000000000000000001" }, "expectError": "session_closed" }
+      ],
+      "expectEvents": [
+        { "type": "stream_started", "provider": "twilio", "callId": "CA00000000000000000000000000000001", "sessionId": "MZ00000000000000000000000000000001", "receivedAtMs": 1000, "providerSequence": 1, "tracks": ["inbound"], "format": { "encoding": "mulaw", "sampleRate": 8000, "channels": 1 }, "bidirectional": null, "customParameters": { "FirstName": "Jane" } },
+        { "type": "audio", "provider": "twilio", "callId": "CA00000000000000000000000000000001", "sessionId": "MZ00000000000000000000000000000001", "receivedAtMs": 1000, "providerSequence": 2, "frame": { "callId": "CA00000000000000000000000000000001", "sessionId": "MZ00000000000000000000000000000001", "provider": "twilio", "direction": "inbound", "format": { "encoding": "mulaw", "sampleRate": 8000, "channels": 1 }, "payloadBase64": "//////////8=", "timestampMs": 5, "timestampKind": "stream_relative_ms", "sequenceNumber": 2, "chunk": 1, "isCompleteFrame": false } },
+        { "type": "stream_stopped", "provider": "twilio", "callId": "CA00000000000000000000000000000001", "sessionId": "MZ00000000000000000000000000000001", "receivedAtMs": 1000, "providerSequence": 3, "reason": "provider_stop" }
+      ]
+    },
+    {
+      "name": "bidirectional playback, marks, clear and dtmf",
+      "options": { "bidirectional": true },
+      "steps": [
+        { "receive": { "event": "connected", "protocol": "Call", "version": "1.0.0" } },
+        { "receive": { "event": "start", "sequenceNumber": "1", "start": { "accountSid": "AC00000000000000000000000000000001", "streamSid": "MZ00000000000000000000000000000002", "callSid": "CA00000000000000000000000000000002", "tracks": ["inbound"], "customParameters": {}, "mediaFormat": { "encoding": "audio/x-mulaw", "sampleRate": 8000, "channels": 1 } }, "streamSid": "MZ00000000000000000000000000000002" } },
+        { "action": { "op": "sendAudio", "payloadBase64": "//////////8=", "format": { "encoding": "mulaw", "sampleRate": 8000, "channels": 1 } }, "expectSent": { "event": "media", "streamSid": "MZ00000000000000000000000000000002", "media": { "payload": "//////////8=" } } },
+        { "action": { "op": "sendMark", "name": "greeting-end" }, "expectSent": { "event": "mark", "streamSid": "MZ00000000000000000000000000000002", "mark": { "name": "greeting-end" } } },
+        { "action": { "op": "clearPlayback" }, "expectSent": { "event": "clear", "streamSid": "MZ00000000000000000000000000000002" } },
+        { "receive": { "event": "mark", "sequenceNumber": "2", "streamSid": "MZ00000000000000000000000000000002", "mark": { "name": "greeting-end" } } },
+        { "receive": { "event": "dtmf", "streamSid": "MZ00000000000000000000000000000002", "sequenceNumber": "3", "dtmf": { "track": "inbound", "digit": "#" } } },
+        { "action": { "op": "sendDtmf", "digits": "1" }, "expectError": "unsupported_capability" },
+        { "action": { "op": "sendAudio", "payloadBase64": "AAA=", "format": { "encoding": "pcm_s16le", "sampleRate": 16000, "channels": 1 } }, "expectError": "unsupported_format" }
+      ],
+      "expectEvents": [
+        { "type": "stream_started", "provider": "twilio", "callId": "CA00000000000000000000000000000002", "sessionId": "MZ00000000000000000000000000000002", "receivedAtMs": 1000, "providerSequence": 1, "tracks": ["inbound"], "format": { "encoding": "mulaw", "sampleRate": 8000, "channels": 1 }, "bidirectional": true, "customParameters": {} },
+        { "type": "playback_mark", "provider": "twilio", "callId": "CA00000000000000000000000000000002", "sessionId": "MZ00000000000000000000000000000002", "receivedAtMs": 1000, "providerSequence": 2, "name": "greeting-end" },
+        { "type": "dtmf", "provider": "twilio", "callId": "CA00000000000000000000000000000002", "sessionId": "MZ00000000000000000000000000000002", "receivedAtMs": 1000, "providerSequence": 3, "digit": "#", "direction": "inbound" },
+        { "type": "stream_stopped", "provider": "twilio", "callId": "CA00000000000000000000000000000002", "sessionId": "MZ00000000000000000000000000000002", "receivedAtMs": 1000, "providerSequence": null, "reason": "socket_closed" }
+      ]
+    },
+    {
+      "name": "both tracks are kept apart",
+      "options": {},
+      "steps": [
+        { "receive": { "event": "start", "sequenceNumber": "1", "start": { "accountSid": "AC00000000000000000000000000000001", "streamSid": "MZ00000000000000000000000000000003", "callSid": "CA00000000000000000000000000000003", "tracks": ["inbound", "outbound"], "mediaFormat": { "encoding": "audio/x-mulaw", "sampleRate": 8000, "channels": 1 } }, "streamSid": "MZ00000000000000000000000000000003" } },
+        { "receive": { "event": "media", "sequenceNumber": "2", "media": { "track": "outbound", "chunk": "1", "timestamp": "0", "payload": "fw==" }, "streamSid": "MZ00000000000000000000000000000003" } }
+      ],
+      "expectEvents": [
+        { "type": "stream_started", "provider": "twilio", "callId": "CA00000000000000000000000000000003", "sessionId": "MZ00000000000000000000000000000003", "receivedAtMs": 1000, "providerSequence": 1, "tracks": ["inbound", "outbound"], "format": { "encoding": "mulaw", "sampleRate": 8000, "channels": 1 }, "bidirectional": null },
+        { "type": "audio", "provider": "twilio", "callId": "CA00000000000000000000000000000003", "sessionId": "MZ00000000000000000000000000000003", "receivedAtMs": 1000, "providerSequence": 2, "frame": { "callId": "CA00000000000000000000000000000003", "sessionId": "MZ00000000000000000000000000000003", "provider": "twilio", "direction": "outbound", "format": { "encoding": "mulaw", "sampleRate": 8000, "channels": 1 }, "payloadBase64": "fw==", "timestampMs": 0, "timestampKind": "stream_relative_ms", "sequenceNumber": 2, "chunk": 1, "isCompleteFrame": false } },
+        { "type": "stream_stopped", "provider": "twilio", "callId": "CA00000000000000000000000000000003", "sessionId": "MZ00000000000000000000000000000003", "receivedAtMs": 1000, "providerSequence": null, "reason": "socket_closed" }
+      ]
+    },
+    {
+      "name": "malformed and out-of-order messages",
+      "options": { "bidirectional": false },
+      "steps": [
+        { "receive": { "event": "media", "sequenceNumber": "2", "media": { "track": "inbound", "chunk": "1", "timestamp": "5", "payload": "//////////8=" }, "streamSid": "MZ00000000000000000000000000000004" }, "expectError": "protocol_violation" },
+        { "receiveRaw": "not json", "expectError": "malformed_message" },
+        { "receive": { "noEvent": true }, "expectError": "malformed_message" },
+        { "receive": { "event": "start", "sequenceNumber": "1", "start": { "accountSid": "AC1", "streamSid": "MZ00000000000000000000000000000004", "callSid": "CA00000000000000000000000000000004", "tracks": ["inbound"], "mediaFormat": { "encoding": "audio/x-l16", "sampleRate": 8000, "channels": 1 } }, "streamSid": "MZ00000000000000000000000000000004" }, "expectError": "unsupported_format" },
+        { "receive": { "event": "start", "sequenceNumber": "1", "start": { "accountSid": "AC1", "streamSid": "MZ00000000000000000000000000000004", "callSid": "CA00000000000000000000000000000004", "tracks": ["sideways"], "mediaFormat": { "encoding": "audio/x-mulaw", "sampleRate": 8000, "channels": 1 } }, "streamSid": "MZ00000000000000000000000000000004" }, "expectError": "malformed_message" },
+        { "receive": { "event": "start", "sequenceNumber": "1", "start": { "accountSid": "AC1", "streamSid": "MZ00000000000000000000000000000004", "callSid": "CA00000000000000000000000000000004", "tracks": ["inbound"], "mediaFormat": { "encoding": "audio/x-mulaw", "sampleRate": 8000, "channels": 1 } }, "streamSid": "MZ00000000000000000000000000000004" } },
+        { "receive": { "event": "start", "sequenceNumber": "1", "start": { "accountSid": "AC1", "streamSid": "MZ00000000000000000000000000000004", "callSid": "CA00000000000000000000000000000004", "tracks": ["inbound"], "mediaFormat": { "encoding": "audio/x-mulaw", "sampleRate": 8000, "channels": 1 } }, "streamSid": "MZ00000000000000000000000000000004" }, "expectError": "protocol_violation" },
+        { "receive": { "event": "media", "sequenceNumber": "2", "media": { "track": "inbound", "chunk": "1", "timestamp": "5", "payload": "//////////8=" }, "streamSid": "MZ99999999999999999999999999999999" }, "expectError": "protocol_violation" },
+        { "receive": { "event": "media", "sequenceNumber": "2", "media": { "track": "inbound", "chunk": "1", "timestamp": "5", "payload": "not*base64" }, "streamSid": "MZ00000000000000000000000000000004" }, "expectError": "malformed_message" },
+        { "receive": { "event": "media", "sequenceNumber": "2", "media": { "track": "inbound", "chunk": "1", "timestamp": "5", "payload": "" }, "streamSid": "MZ00000000000000000000000000000004" }, "expectError": "malformed_message" },
+        { "receive": { "event": "media", "sequenceNumber": "two", "media": { "track": "inbound", "chunk": "1", "timestamp": "5", "payload": "fw==" }, "streamSid": "MZ00000000000000000000000000000004" }, "expectError": "malformed_message" },
+        { "receive": { "event": "dtmf", "sequenceNumber": "3", "streamSid": "MZ00000000000000000000000000000004", "dtmf": { "track": "inbound", "digit": "12" } }, "expectError": "malformed_message" },
+        { "receive": { "event": "someFutureEvent", "streamSid": "MZ00000000000000000000000000000004" } },
+        { "action": { "op": "sendMark", "name": "m1" }, "expectError": "unsupported_capability" }
+      ],
+      "expectEvents": [
+        { "type": "stream_started", "provider": "twilio", "callId": "CA00000000000000000000000000000004", "sessionId": "MZ00000000000000000000000000000004", "receivedAtMs": 1000, "providerSequence": 1, "tracks": ["inbound"], "format": { "encoding": "mulaw", "sampleRate": 8000, "channels": 1 }, "bidirectional": false },
+        { "type": "stream_stopped", "provider": "twilio", "callId": "CA00000000000000000000000000000004", "sessionId": "MZ00000000000000000000000000000004", "receivedAtMs": 1000, "providerSequence": null, "reason": "socket_closed" }
+      ]
+    }
+  ]
+}

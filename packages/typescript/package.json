@@ -1,0 +1,52 @@
+{
+  "name": "@vasikmansuri/calling-agent-toolkit",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Provider-neutral telephony, audio, email-capture, STT and RAG building blocks for existing AI calling agents.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./twilio": {
+      "types": "./dist/providers/twilio.d.ts",
+      "import": "./dist/providers/twilio.js"
+    },
+    "./plivo": {
+      "types": "./dist/providers/plivo.d.ts",
+      "import": "./dist/providers/plivo.js"
+    },
+    "./deepgram": {
+      "types": "./dist/providers/deepgram.d.ts",
+      "import": "./dist/providers/deepgram.js"
+    },
+    "./telnyx": {
+      "types": "./dist/providers/telnyx.d.ts",
+      "import": "./dist/providers/telnyx.js"
+    },
+    "./vonage": {
+      "types": "./dist/providers/vonage.d.ts",
+      "import": "./dist/providers/vonage.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.0",
+    "ajv": "^8.17.1",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
+  }
+}

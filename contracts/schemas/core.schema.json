@@ -1,0 +1,237 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/vasikmansuri/universal-calling-agent-toolkit/contracts/schemas/core.schema.json",
+  "title": "Calling Agent Toolkit core contracts",
+  "description": "Language-neutral wire form of the core types. Python and TypeScript packages must serialize to and parse from these shapes. Binary audio is carried as base64 in `payloadBase64`.",
+  "$defs": {
+    "AudioEncoding": {
+      "description": "Internal encoding identifiers. Provider-specific MIME strings (audio/x-mulaw, audio/x-l16) are mapped by adapters, never stored here.",
+      "enum": ["pcm_s16le", "mulaw", "alaw"]
+    },
+    "AudioFormat": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["encoding", "sampleRate", "channels"],
+      "properties": {
+        "encoding": { "$ref": "#/$defs/AudioEncoding" },
+        "sampleRate": { "type": "integer", "minimum": 8000, "maximum": 48000 },
+        "channels": { "type": "integer", "minimum": 1, "maximum": 2 }
+      }
+    },
+    "MediaDirection": {
+      "description": "inbound = audio from the remote party (caller) toward the toolkit; outbound = audio the platform plays toward the remote party.",
+      "enum": ["inbound", "outbound"]
+    },
+    "TimestampKind": {
+      "description": "Providers disagree on timestamp meaning. Twilio sends ms since stream start; Plivo sends Unix epoch ms. Never compare timestamps of different kinds.",
+      "enum": ["stream_relative_ms", "unix_epoch_ms", "none"]
+    },
+    "AudioFrame": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["callId", "sessionId", "provider", "direction", "format", "payloadBase64", "timestampKind", "isCompleteFrame"],
+      "properties": {
+        "callId": { "type": "string", "minLength": 1 },
+        "sessionId": { "type": "string", "minLength": 1 },
+        "provider": { "type": "string", "minLength": 1 },
+        "direction": { "$ref": "#/$defs/MediaDirection" },
+        "format": { "$ref": "#/$defs/AudioFormat" },
+        "payloadBase64": { "type": "string", "contentEncoding": "base64" },
+        "timestampMs": { "type": ["number", "null"], "minimum": 0 },
+        "timestampKind": { "$ref": "#/$defs/TimestampKind" },
+        "sequenceNumber": { "type": ["integer", "null"], "minimum": 0, "description": "Provider message sequence, when provided." },
+        "chunk": { "type": ["integer", "null"], "minimum": 0, "description": "Provider per-track chunk counter, when provided." },
+        "isCompleteFrame": { "type": "boolean", "description": "true when the payload is exactly one processing frame of the declared format; false for provider chunks that still need re-framing." }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "timestampKind": { "const": "none" } } },
+          "then": { "properties": { "timestampMs": { "type": "null" } } },
+          "else": { "required": ["timestampMs"], "properties": { "timestampMs": { "type": "number" } } }
+        }
+      ]
+    },
+    "Capability": {
+      "enum": [
+        "inbound_calls",
+        "outbound_calls",
+        "answer_call",
+        "end_call",
+        "call_transfer",
+        "call_status_events",
+        "dtmf_receive",
+        "dtmf_send",
+        "media_stream_control",
+        "live_inbound_audio",
+        "live_outbound_audio",
+        "bidirectional_audio",
+        "separate_tracks",
+        "playback",
+        "playback_marks",
+        "playback_interruption",
+        "webhook_validation",
+        "stream_auth_validation",
+        "recording_access",
+        "provider_noise_suppression",
+        "stream_recovery"
+      ]
+    },
+    "CapabilitySupport": {
+      "enum": ["supported", "unsupported", "requires_configuration", "unavailable_from_provider"]
+    },
+    "CapabilityEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["support"],
+      "properties": {
+        "support": { "$ref": "#/$defs/CapabilitySupport" },
+        "note": { "type": "string" }
+      }
+    },
+    "ProviderCapabilities": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provider", "adapterVersion", "capabilities"],
+      "properties": {
+        "provider": { "type": "string", "minLength": 1 },
+        "adapterVersion": { "type": "string" },
+        "supportedInputFormats": { "type": "array", "items": { "$ref": "#/$defs/AudioFormat" } },
+        "supportedPlaybackFormats": { "type": "array", "items": { "$ref": "#/$defs/AudioFormat" } },
+        "capabilities": {
+          "type": "object",
+          "description": "Every Capability must be declared. Missing keys are a conformance failure: adapters may not leave support implicit.",
+          "propertyNames": { "$ref": "#/$defs/Capability" },
+          "additionalProperties": { "$ref": "#/$defs/CapabilityEntry" }
+        }
+      }
+    },
+    "ProviderErrorCode": {
+      "enum": [
+        "unsupported_capability",
+        "invalid_configuration",
+        "authentication_failed",
+        "signature_invalid",
+        "malformed_message",
+        "protocol_violation",
+        "unsupported_format",
+        "buffer_overflow",
+        "session_closed",
+        "provider_unavailable",
+        "rate_limited",
+        "timeout",
+        "unknown"
+      ]
+    },
+    "ProviderError": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "message", "provider", "retryable"],
+      "properties": {
+        "code": { "$ref": "#/$defs/ProviderErrorCode" },
+        "message": { "type": "string", "minLength": 1 },
+        "provider": { "type": "string" },
+        "retryable": { "type": "boolean" },
+        "capability": { "$ref": "#/$defs/Capability" },
+        "providerCode": { "type": "string", "description": "Native provider error code, unmodified." },
+        "callId": { "type": "string" },
+        "sessionId": { "type": "string" }
+      }
+    },
+    "HealthStatus": { "enum": ["healthy", "degraded", "unhealthy"] },
+    "AdapterHealth": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provider", "status", "checkedAtMs"],
+      "properties": {
+        "provider": { "type": "string" },
+        "status": { "$ref": "#/$defs/HealthStatus" },
+        "checkedAtMs": { "type": "number", "minimum": 0 },
+        "activeSessions": { "type": "integer", "minimum": 0 },
+        "detail": { "type": "string" }
+      }
+    },
+    "EventBase": {
+      "type": "object",
+      "required": ["type", "provider", "callId", "sessionId", "receivedAtMs"],
+      "properties": {
+        "type": { "type": "string" },
+        "provider": { "type": "string", "minLength": 1 },
+        "callId": { "type": "string", "minLength": 1 },
+        "sessionId": { "type": "string", "minLength": 1 },
+        "receivedAtMs": { "type": "number", "minimum": 0 },
+        "providerSequence": { "type": ["integer", "null"], "minimum": 0 }
+      }
+    },
+    "TelephonyEvent": {
+      "description": "Normalized events emitted by adapters. Vendor-specific message names never leave the adapter.",
+      "oneOf": [
+        {
+          "allOf": [{ "$ref": "#/$defs/EventBase" }],
+          "properties": {
+            "type": { "const": "stream_started" },
+            "tracks": { "type": "array", "items": { "$ref": "#/$defs/MediaDirection" }, "minItems": 1 },
+            "format": { "$ref": "#/$defs/AudioFormat" },
+            "bidirectional": { "type": ["boolean", "null"], "description": "null when the provider does not say in-band." },
+            "customParameters": { "type": "object", "additionalProperties": { "type": "string" } }
+          },
+          "required": ["type", "tracks", "format", "bidirectional"]
+        },
+        {
+          "allOf": [{ "$ref": "#/$defs/EventBase" }],
+          "properties": {
+            "type": { "const": "audio" },
+            "frame": { "$ref": "#/$defs/AudioFrame" }
+          },
+          "required": ["type", "frame"]
+        },
+        {
+          "allOf": [{ "$ref": "#/$defs/EventBase" }],
+          "properties": {
+            "type": { "const": "dtmf" },
+            "digit": { "type": "string", "pattern": "^[0-9*#A-Da-d]$" },
+            "direction": { "$ref": "#/$defs/MediaDirection" }
+          },
+          "required": ["type", "digit"]
+        },
+        {
+          "allOf": [{ "$ref": "#/$defs/EventBase" }],
+          "properties": {
+            "type": { "const": "playback_mark" },
+            "name": { "type": "string" }
+          },
+          "required": ["type", "name"]
+        },
+        {
+          "allOf": [{ "$ref": "#/$defs/EventBase" }],
+          "properties": { "type": { "const": "playback_cleared" } },
+          "required": ["type"]
+        },
+        {
+          "allOf": [{ "$ref": "#/$defs/EventBase" }],
+          "properties": {
+            "type": { "const": "stream_stopped" },
+            "reason": { "enum": ["provider_stop", "call_ended", "socket_closed", "timeout", "error", "unknown"] }
+          },
+          "required": ["type", "reason"]
+        },
+        {
+          "allOf": [{ "$ref": "#/$defs/EventBase" }],
+          "properties": {
+            "type": { "const": "call_status" },
+            "status": { "enum": ["queued", "ringing", "in_progress", "completed", "busy", "no_answer", "failed", "canceled", "unknown"] },
+            "providerStatus": { "type": "string" }
+          },
+          "required": ["type", "status"]
+        },
+        {
+          "allOf": [{ "$ref": "#/$defs/EventBase" }],
+          "properties": {
+            "type": { "const": "error" },
+            "error": { "$ref": "#/$defs/ProviderError" }
+          },
+          "required": ["type", "error"]
+        }
+      ]
+    }
+  }
+}

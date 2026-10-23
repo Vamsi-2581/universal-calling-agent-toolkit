@@ -1,0 +1,67 @@
+{
+  "description": "Each entry names a $defs type in core.schema.json with documents that must validate and documents that must be rejected.",
+  "AudioFrame": {
+    "valid": [
+      {
+        "callId": "CA00000000000000000000000000000001",
+        "sessionId": "MZ00000000000000000000000000000001",
+        "provider": "twilio",
+        "direction": "inbound",
+        "format": { "encoding": "mulaw", "sampleRate": 8000, "channels": 1 },
+        "payloadBase64": "//////////8=",
+        "timestampMs": 5,
+        "timestampKind": "stream_relative_ms",
+        "sequenceNumber": 3,
+        "chunk": 1,
+        "isCompleteFrame": false
+      },
+      {
+        "callId": "call-1",
+        "sessionId": "file-1",
+        "provider": "file",
+        "direction": "inbound",
+        "format": { "encoding": "pcm_s16le", "sampleRate": 16000, "channels": 1 },
+        "payloadBase64": "AAAAAA==",
+        "timestampMs": null,
+        "timestampKind": "none",
+        "isCompleteFrame": true
+      }
+    ],
+    "invalid": [
+      { "why": "missing timestampMs when kind is not none", "doc": { "callId": "c", "sessionId": "s", "provider": "p", "direction": "inbound", "format": { "encoding": "mulaw", "sampleRate": 8000, "channels": 1 }, "payloadBase64": "", "timestampKind": "unix_epoch_ms", "isCompleteFrame": false } },
+      { "why": "timestamp given with kind none", "doc": { "callId": "c", "sessionId": "s", "provider": "p", "direction": "inbound", "format": { "encoding": "mulaw", "sampleRate": 8000, "channels": 1 }, "payloadBase64": "", "timestampMs": 4, "timestampKind": "none", "isCompleteFrame": false } },
+      { "why": "provider MIME string leaked into encoding", "doc": { "callId": "c", "sessionId": "s", "provider": "p", "direction": "inbound", "format": { "encoding": "audio/x-mulaw", "sampleRate": 8000, "channels": 1 }, "payloadBase64": "", "timestampMs": null, "timestampKind": "none", "isCompleteFrame": false } },
+      { "why": "unknown direction", "doc": { "callId": "c", "sessionId": "s", "provider": "p", "direction": "both", "format": { "encoding": "mulaw", "sampleRate": 8000, "channels": 1 }, "payloadBase64": "", "timestampMs": null, "timestampKind": "none", "isCompleteFrame": false } }
+    ]
+  },
+  "ProviderCapabilities": {
+    "valid": [
+      { "provider": "x", "adapterVersion": "0.1.0", "capabilities": { "playback": { "support": "supported" } } }
+    ],
+    "invalid": [
+      { "why": "invented capability", "doc": { "provider": "x", "adapterVersion": "0.1.0", "capabilities": { "teleport": { "support": "supported" } } } },
+      { "why": "boolean instead of explicit support level", "doc": { "provider": "x", "adapterVersion": "0.1.0", "capabilities": { "playback": true } } }
+    ]
+  },
+  "ProviderError": {
+    "valid": [
+      { "code": "unsupported_capability", "message": "call_transfer is not supported by fixture", "provider": "fixture", "retryable": false, "capability": "call_transfer" }
+    ],
+    "invalid": [
+      { "why": "unknown code", "doc": { "code": "oops", "message": "m", "provider": "p", "retryable": false } }
+    ]
+  },
+  "TelephonyEvent": {
+    "valid": [
+      { "type": "stream_started", "provider": "twilio", "callId": "CA1", "sessionId": "MZ1", "receivedAtMs": 1700000000000, "providerSequence": 1, "tracks": ["inbound"], "format": { "encoding": "mulaw", "sampleRate": 8000, "channels": 1 }, "bidirectional": null, "customParameters": { "FirstName": "Jane" } },
+      { "type": "dtmf", "provider": "plivo", "callId": "c", "sessionId": "s", "receivedAtMs": 1, "digit": "#", "direction": "inbound" },
+      { "type": "playback_mark", "provider": "twilio", "callId": "c", "sessionId": "s", "receivedAtMs": 1, "name": "greeting-end" },
+      { "type": "stream_stopped", "provider": "twilio", "callId": "c", "sessionId": "s", "receivedAtMs": 1, "reason": "provider_stop" }
+    ],
+    "invalid": [
+      { "why": "vendor event name", "doc": { "type": "playedStream", "provider": "plivo", "callId": "c", "sessionId": "s", "receivedAtMs": 1, "name": "x" } },
+      { "why": "multi-character dtmf", "doc": { "type": "dtmf", "provider": "p", "callId": "c", "sessionId": "s", "receivedAtMs": 1, "digit": "12" } },
+      { "why": "stream_started missing format", "doc": { "type": "stream_started", "provider": "p", "callId": "c", "sessionId": "s", "receivedAtMs": 1, "tracks": ["inbound"], "bidirectional": true } }
+    ]
+  }
+}

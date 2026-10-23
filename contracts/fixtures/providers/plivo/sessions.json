@@ -1,0 +1,70 @@
+{
+  "description": "Plivo Audio Streams sessions. Message shapes follow https://www.plivo.com/docs/voice-agents/audio-streaming/concepts/stream-event-protocol and https://www.plivo.com/docs/voice/api/audio-streams. Same runner rules as twilio/sessions.json. Plivo's docs disagree on whether `start` uses sequenceNumber 0 or 1, so both appear here.",
+  "cases": [
+    {
+      "name": "mulaw inbound stream with dtmf",
+      "options": {},
+      "steps": [
+        { "receive": { "event": "start", "sequenceNumber": 0, "start": { "callId": "11111111-2222-3333-4444-555555555555", "streamId": "aaaaaaaa-bbbb-cccc-dddd-000000000001", "accountId": "MA0000000000000000000", "tracks": ["inbound"], "mediaFormat": { "encoding": "audio/x-mulaw", "sampleRate": 8000 } }, "extra_headers": "tenant=acme;agent=7" } },
+        { "receive": { "event": "media", "sequenceNumber": 1, "streamId": "aaaaaaaa-bbbb-cccc-dddd-000000000001", "media": { "track": "inbound", "timestamp": "1729670400020", "chunk": 1, "payload": "//////////8=" }, "extra_headers": "tenant=acme;agent=7" } },
+        { "receive": { "event": "dtmf", "sequenceNumber": 2, "streamId": "aaaaaaaa-bbbb-cccc-dddd-000000000001", "dtmf": { "track": "inbound", "digit": "5", "timestamp": "1729670400100" }, "extra_headers": "tenant=acme;agent=7" } },
+        { "action": { "op": "sendAudio", "payloadBase64": "//////////8=", "format": { "encoding": "mulaw", "sampleRate": 8000, "channels": 1 } }, "expectError": "invalid_configuration" }
+      ],
+      "expectEvents": [
+        { "type": "stream_started", "provider": "plivo", "callId": "11111111-2222-3333-4444-555555555555", "sessionId": "aaaaaaaa-bbbb-cccc-dddd-000000000001", "receivedAtMs": 1000, "providerSequence": 0, "tracks": ["inbound"], "format": { "encoding": "mulaw", "sampleRate": 8000, "channels": 1 }, "bidirectional": null, "customParameters": { "extraHeaders": "tenant=acme;agent=7" } },
+        { "type": "audio", "provider": "plivo", "callId": "11111111-2222-3333-4444-555555555555", "sessionId": "aaaaaaaa-bbbb-cccc-dddd-000000000001", "receivedAtMs": 1000, "providerSequence": 1, "frame": { "callId": "11111111-2222-3333-4444-555555555555", "sessionId": "aaaaaaaa-bbbb-cccc-dddd-000000000001", "provider": "plivo", "direction": "inbound", "format": { "encoding": "mulaw", "sampleRate": 8000, "channels": 1 }, "payloadBase64": "//////////8=", "timestampMs": 1729670400020, "timestampKind": "unix_epoch_ms", "sequenceNumber": 1, "chunk": 1, "isCompleteFrame": false } },
+        { "type": "dtmf", "provider": "plivo", "callId": "11111111-2222-3333-4444-555555555555", "sessionId": "aaaaaaaa-bbbb-cccc-dddd-000000000001", "receivedAtMs": 1000, "providerSequence": 2, "digit": "5", "direction": "inbound" },
+        { "type": "stream_stopped", "provider": "plivo", "callId": "11111111-2222-3333-4444-555555555555", "sessionId": "aaaaaaaa-bbbb-cccc-dddd-000000000001", "receivedAtMs": 1000, "providerSequence": null, "reason": "socket_closed" }
+      ]
+    },
+    {
+      "name": "big-endian L16 16 kHz with bidirectional playback",
+      "options": { "bidirectional": true, "l16ByteOrder": "big" },
+      "steps": [
+        { "receive": { "event": "start", "sequenceNumber": 1, "start": { "callId": "11111111-2222-3333-4444-555555555556", "streamId": "aaaaaaaa-bbbb-cccc-dddd-000000000002", "accountId": "MA0000000000000000000", "tracks": ["inbound"], "mediaFormat": { "encoding": "audio/x-l16", "sampleRate": 16000 } } } },
+        { "receive": { "event": "media", "sequenceNumber": 2, "streamId": "aaaaaaaa-bbbb-cccc-dddd-000000000002", "media": { "track": "inbound", "timestamp": "1729670400020", "chunk": 1, "payload": "AAEAAg==" } } },
+        { "receive": { "event": "media", "sequenceNumber": 3, "streamId": "aaaaaaaa-bbbb-cccc-dddd-000000000002", "media": { "track": "inbound", "timestamp": "1729670400040", "chunk": 2, "payload": "AAEA" } }, "expectError": "malformed_message" },
+        { "action": { "op": "sendAudio", "payloadBase64": "AQACAA==", "format": { "encoding": "pcm_s16le", "sampleRate": 16000, "channels": 1 } }, "expectSent": { "event": "playAudio", "media": { "contentType": "audio/x-l16", "sampleRate": 16000, "payload": "AAEAAg==" } } },
+        { "action": { "op": "sendAudio", "payloadBase64": "//////////8=", "format": { "encoding": "mulaw", "sampleRate": 8000, "channels": 1 } }, "expectError": "unsupported_format" },
+        { "action": { "op": "sendMark", "name": "m1" }, "expectSent": { "event": "checkpoint", "streamId": "aaaaaaaa-bbbb-cccc-dddd-000000000002", "name": "m1" } },
+        { "receive": { "event": "playedStream", "sequenceNumber": 4, "streamId": "aaaaaaaa-bbbb-cccc-dddd-000000000002", "name": "m1" } },
+        { "action": { "op": "clearPlayback" }, "expectSent": { "event": "clearAudio", "streamId": "aaaaaaaa-bbbb-cccc-dddd-000000000002" } },
+        { "receive": { "event": "clearedAudio", "sequenceNumber": 5, "streamId": "aaaaaaaa-bbbb-cccc-dddd-000000000002" } },
+        { "action": { "op": "sendDtmf", "digits": "12#" }, "expectSent": { "event": "sendDTMF", "dtmf": "12#" } },
+        { "action": { "op": "sendDtmf", "digits": "12x" }, "expectError": "invalid_configuration" },
+        { "receive": { "event": "stop", "sequenceNumber": 6, "streamId": "aaaaaaaa-bbbb-cccc-dddd-000000000002" } }
+      ],
+      "expectEvents": [
+        { "type": "stream_started", "provider": "plivo", "callId": "11111111-2222-3333-4444-555555555556", "sessionId": "aaaaaaaa-bbbb-cccc-dddd-000000000002", "receivedAtMs": 1000, "providerSequence": 1, "tracks": ["inbound"], "format": { "encoding": "pcm_s16le", "sampleRate": 16000, "channels": 1 }, "bidirectional": true },
+        { "type": "audio", "provider": "plivo", "callId": "11111111-2222-3333-4444-555555555556", "sessionId": "aaaaaaaa-bbbb-cccc-dddd-000000000002", "receivedAtMs": 1000, "providerSequence": 2, "frame": { "callId": "11111111-2222-3333-4444-555555555556", "sessionId": "aaaaaaaa-bbbb-cccc-dddd-000000000002", "provider": "plivo", "direction": "inbound", "format": { "encoding": "pcm_s16le", "sampleRate": 16000, "channels": 1 }, "payloadBase64": "AQACAA==", "timestampMs": 1729670400020, "timestampKind": "unix_epoch_ms", "sequenceNumber": 2, "chunk": 1, "isCompleteFrame": false } },
+        { "type": "playback_mark", "provider": "plivo", "callId": "11111111-2222-3333-4444-555555555556", "sessionId": "aaaaaaaa-bbbb-cccc-dddd-000000000002", "receivedAtMs": 1000, "providerSequence": 4, "name": "m1" },
+        { "type": "playback_cleared", "provider": "plivo", "callId": "11111111-2222-3333-4444-555555555556", "sessionId": "aaaaaaaa-bbbb-cccc-dddd-000000000002", "receivedAtMs": 1000, "providerSequence": 5 },
+        { "type": "stream_stopped", "provider": "plivo", "callId": "11111111-2222-3333-4444-555555555556", "sessionId": "aaaaaaaa-bbbb-cccc-dddd-000000000002", "receivedAtMs": 1000, "providerSequence": 6, "reason": "provider_stop" }
+      ]
+    },
+    {
+      "name": "L16 without a configured byte order is refused",
+      "options": {},
+      "steps": [
+        { "receive": { "event": "start", "sequenceNumber": 1, "start": { "callId": "11111111-2222-3333-4444-555555555557", "streamId": "aaaaaaaa-bbbb-cccc-dddd-000000000003", "accountId": "MA0000000000000000000", "tracks": ["inbound"], "mediaFormat": { "encoding": "audio/x-l16", "sampleRate": 8000 } } }, "expectError": "invalid_configuration" },
+        { "receive": { "event": "start", "sequenceNumber": 1, "start": { "callId": "11111111-2222-3333-4444-555555555557", "streamId": "aaaaaaaa-bbbb-cccc-dddd-000000000003", "accountId": "MA0000000000000000000", "tracks": ["inbound"], "mediaFormat": { "encoding": "audio/x-l16", "sampleRate": 11025 } } }, "expectError": "invalid_configuration" }
+      ],
+      "expectEvents": []
+    },
+    {
+      "name": "mismatched stream id and numeric strings",
+      "options": {},
+      "steps": [
+        { "receive": { "event": "start", "sequenceNumber": "1", "start": { "callId": "11111111-2222-3333-4444-555555555558", "streamId": "aaaaaaaa-bbbb-cccc-dddd-000000000004", "accountId": "MA0000000000000000000", "tracks": ["inbound"], "mediaFormat": { "encoding": "audio/x-mulaw", "sampleRate": 8000 } } } },
+        { "receive": { "event": "media", "sequenceNumber": 2, "streamId": "aaaaaaaa-bbbb-cccc-dddd-999999999999", "media": { "track": "inbound", "timestamp": "1729670400020", "chunk": 1, "payload": "fw==" } }, "expectError": "protocol_violation" },
+        { "receive": { "event": "media", "sequenceNumber": -1, "streamId": "aaaaaaaa-bbbb-cccc-dddd-000000000004", "media": { "track": "inbound", "timestamp": "1729670400020", "chunk": 1, "payload": "fw==" } }, "expectError": "malformed_message" },
+        { "receive": { "event": "media", "sequenceNumber": 3, "streamId": "aaaaaaaa-bbbb-cccc-dddd-000000000004", "media": { "track": "inbound", "chunk": 2, "payload": "fw==" } } }
+      ],
+      "expectEvents": [
+        { "type": "stream_started", "provider": "plivo", "callId": "11111111-2222-3333-4444-555555555558", "sessionId": "aaaaaaaa-bbbb-cccc-dddd-000000000004", "receivedAtMs": 1000, "providerSequence": 1, "tracks": ["inbound"], "format": { "encoding": "mulaw", "sampleRate": 8000, "channels": 1 }, "bidirectional": null },
+        { "type": "audio", "provider": "plivo", "callId": "11111111-2222-3333-4444-555555555558", "sessionId": "aaaaaaaa-bbbb-cccc-dddd-000000000004", "receivedAtMs": 1000, "providerSequence": 3, "frame": { "callId": "11111111-2222-3333-4444-555555555558", "sessionId": "aaaaaaaa-bbbb-cccc-dddd-000000000004", "provider": "plivo", "direction": "inbound", "format": { "encoding": "mulaw", "sampleRate": 8000, "channels": 1 }, "payloadBase64": "fw==", "timestampMs": null, "timestampKind": "none", "sequenceNumber": 3, "chunk": 2, "isCompleteFrame": false } },
+        { "type": "stream_stopped", "provider": "plivo", "callId": "11111111-2222-3333-4444-555555555558", "sessionId": "aaaaaaaa-bbbb-cccc-dddd-000000000004", "receivedAtMs": 1000, "providerSequence": null, "reason": "socket_closed" }
+      ]
+    }
+  ]
+}

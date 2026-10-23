@@ -1,0 +1,14 @@
+{
+  "description": "validateAudioPayload(format, byteLength, maxBytes) results. Sample width: pcm_s16le=2, mulaw=1, alaw=1, multiplied by channels.",
+  "maxBytes": 4096,
+  "cases": [
+    { "format": { "encoding": "mulaw", "sampleRate": 8000, "channels": 1 }, "byteLength": 160, "ok": true },
+    { "format": { "encoding": "pcm_s16le", "sampleRate": 16000, "channels": 1 }, "byteLength": 640, "ok": true },
+    { "format": { "encoding": "pcm_s16le", "sampleRate": 16000, "channels": 1 }, "byteLength": 641, "ok": false, "code": "malformed_message" },
+    { "format": { "encoding": "pcm_s16le", "sampleRate": 8000, "channels": 2 }, "byteLength": 6, "ok": false, "code": "malformed_message" },
+    { "format": { "encoding": "mulaw", "sampleRate": 8000, "channels": 1 }, "byteLength": 0, "ok": false, "code": "malformed_message" },
+    { "format": { "encoding": "mulaw", "sampleRate": 8000, "channels": 1 }, "byteLength": 4097, "ok": false, "code": "buffer_overflow" },
+    { "format": { "encoding": "pcm_s16le", "sampleRate": 11025, "channels": 1 }, "byteLength": 2, "ok": false, "code": "unsupported_format" }
+  ],
+  "supportedSampleRates": [8000, 16000, 24000, 48000]
+}

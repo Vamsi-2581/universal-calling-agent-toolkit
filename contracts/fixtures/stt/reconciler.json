@@ -1,0 +1,45 @@
+{
+  "description": "TranscriptReconciler(tenantId t1, sessionId s1, clock 1000). Inputs are normalized SttResults; outputs are TranscriptEvents. Interim text is shown on top of committed segments but never committed itself. Segment finals are de-duplicated by segmentKey and ordered by startMs. A turn_end with committed text emits one final; a turn_end without text emits nothing.",
+  "cases": [
+    {
+      "name": "interim and final segments build one utterance",
+      "inputs": [
+        { "type": "interim", "text": "my email", "confidence": 0.7 },
+        { "type": "interim", "text": "my email is john", "confidence": null },
+        { "type": "segment_final", "text": "my email is john dot", "confidence": 0.9, "segmentKey": "0:1500", "startMs": 0 },
+        { "type": "interim", "text": "smith at gmail", "confidence": null },
+        { "type": "segment_final", "text": "smith at gmail dot com", "confidence": 0.8, "segmentKey": "1500:1200", "startMs": 1500 },
+        { "type": "turn_end" },
+        { "type": "turn_end" }
+      ],
+      "expect": [
+        { "eventId": "s1:turn-1:1", "tenantId": "t1", "sessionId": "s1", "turnId": "turn-1", "kind": "partial", "revision": 0, "text": "my email", "confidence": null, "receivedAtMs": 1000 },
+        { "eventId": "s1:turn-1:2", "tenantId": "t1", "sessionId": "s1", "turnId": "turn-1", "kind": "partial", "revision": 1, "text": "my email is john", "confidence": null, "receivedAtMs": 1000 },
+        { "eventId": "s1:turn-1:3", "tenantId": "t1", "sessionId": "s1", "turnId": "turn-1", "kind": "partial", "revision": 2, "text": "my email is john dot", "confidence": null, "receivedAtMs": 1000 },
+        { "eventId": "s1:turn-1:4", "tenantId": "t1", "sessionId": "s1", "turnId": "turn-1", "kind": "partial", "revision": 3, "text": "my email is john dot smith at gmail", "confidence": null, "receivedAtMs": 1000 },
+        { "eventId": "s1:turn-1:5", "tenantId": "t1", "sessionId": "s1", "turnId": "turn-1", "kind": "partial", "revision": 4, "text": "my email is john dot smith at gmail dot com", "confidence": null, "receivedAtMs": 1000 },
+        { "eventId": "s1:turn-1:6", "tenantId": "t1", "sessionId": "s1", "turnId": "turn-1", "kind": "final", "revision": 0, "text": "my email is john dot smith at gmail dot com", "confidence": 0.8, "receivedAtMs": 1000 }
+      ]
+    },
+    {
+      "name": "duplicate and out-of-order segments",
+      "inputs": [
+        { "type": "segment_final", "text": "world", "confidence": null, "segmentKey": "b", "startMs": 1000 },
+        { "type": "segment_final", "text": "hello", "confidence": null, "segmentKey": "a", "startMs": 0 },
+        { "type": "segment_final", "text": "hello", "confidence": null, "segmentKey": "a", "startMs": 0 },
+        { "type": "turn_end" },
+        { "type": "interim", "text": "  ", "confidence": null },
+        { "type": "turn_end" },
+        { "type": "segment_final", "text": "next", "confidence": 0.5, "segmentKey": "c", "startMs": 3000 },
+        { "type": "turn_end" }
+      ],
+      "expect": [
+        { "eventId": "s1:turn-1:1", "tenantId": "t1", "sessionId": "s1", "turnId": "turn-1", "kind": "partial", "revision": 0, "text": "world", "confidence": null, "receivedAtMs": 1000 },
+        { "eventId": "s1:turn-1:2", "tenantId": "t1", "sessionId": "s1", "turnId": "turn-1", "kind": "partial", "revision": 1, "text": "hello world", "confidence": null, "receivedAtMs": 1000 },
+        { "eventId": "s1:turn-1:3", "tenantId": "t1", "sessionId": "s1", "turnId": "turn-1", "kind": "final", "revision": 0, "text": "hello world", "confidence": null, "receivedAtMs": 1000 },
+        { "eventId": "s1:turn-2:4", "tenantId": "t1", "sessionId": "s1", "turnId": "turn-2", "kind": "partial", "revision": 0, "text": "next", "confidence": null, "receivedAtMs": 1000 },
+        { "eventId": "s1:turn-2:5", "tenantId": "t1", "sessionId": "s1", "turnId": "turn-2", "kind": "final", "revision": 0, "text": "next", "confidence": 0.5, "receivedAtMs": 1000 }
+      ]
+    }
+  ]
+}

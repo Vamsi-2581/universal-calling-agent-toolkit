@@ -1,0 +1,20 @@
+{
+  "description": "requireCapability(capabilities, capability) must behave identically in every language package.",
+  "capabilities": {
+    "provider": "fixture",
+    "adapterVersion": "0.0.0",
+    "capabilities": {
+      "live_inbound_audio": { "support": "supported" },
+      "playback": { "support": "requires_configuration", "note": "Start the stream in bidirectional mode." },
+      "call_transfer": { "support": "unsupported" },
+      "recording_access": { "support": "unavailable_from_provider" }
+    }
+  },
+  "cases": [
+    { "capability": "live_inbound_audio", "ok": true },
+    { "capability": "playback", "ok": false, "code": "invalid_configuration", "messageContains": "bidirectional" },
+    { "capability": "call_transfer", "ok": false, "code": "unsupported_capability" },
+    { "capability": "recording_access", "ok": false, "code": "unsupported_capability" },
+    { "capability": "dtmf_send", "ok": false, "code": "unsupported_capability", "messageContains": "not declared" }
+  ]
+}

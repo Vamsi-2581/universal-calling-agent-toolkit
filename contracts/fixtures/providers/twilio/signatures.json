@@ -1,0 +1,129 @@
+{
+  "description": "twilio webhook signature cases. `valid` and every signature were produced by twilio.request_validator.RequestValidator (official twilio-python SDK).",
+  "cases": [
+    {
+      "name": "form post",
+      "authToken": "twilio-test-token-not-real",
+      "request": {
+        "method": "POST",
+        "url": "https://example.com/voice?tenant=a%20b",
+        "headers": {
+          "X-Twilio-Signature": "Tcx5jG6JBoN1y7OD+pAdV3beaxE=",
+          "content-type": "application/x-www-form-urlencoded"
+        },
+        "rawBody": "CallSid=CA00000000000000000000000000000001&From=%2B15551234567&To=%2B15557654321&CallStatus=ringing"
+      },
+      "valid": true
+    },
+    {
+      "name": "form post, request url carries default port",
+      "authToken": "twilio-test-token-not-real",
+      "request": {
+        "method": "POST",
+        "url": "https://example.com:443/voice?tenant=a%20b",
+        "headers": {
+          "X-Twilio-Signature": "Tcx5jG6JBoN1y7OD+pAdV3beaxE=",
+          "content-type": "application/x-www-form-urlencoded"
+        },
+        "rawBody": "CallSid=CA00000000000000000000000000000001&From=%2B15551234567&To=%2B15557654321&CallStatus=ringing"
+      },
+      "valid": true
+    },
+    {
+      "name": "form post, tampered body",
+      "authToken": "twilio-test-token-not-real",
+      "request": {
+        "method": "POST",
+        "url": "https://example.com/voice?tenant=a%20b",
+        "headers": {
+          "X-Twilio-Signature": "Tcx5jG6JBoN1y7OD+pAdV3beaxE=",
+          "content-type": "application/x-www-form-urlencoded"
+        },
+        "rawBody": "CallSid=CA00000000000000000000000000000001&From=%2B15551234567&To=%2B15557654321&CallStatus=completed"
+      },
+      "valid": false
+    },
+    {
+      "name": "form post, wrong token",
+      "authToken": "twilio-test-token-not-real",
+      "request": {
+        "method": "POST",
+        "url": "https://example.com/voice?tenant=a%20b",
+        "headers": {
+          "X-Twilio-Signature": "N8DT8T065sW84W2DU78QZRRk/OU=",
+          "content-type": "application/x-www-form-urlencoded"
+        },
+        "rawBody": "CallSid=CA00000000000000000000000000000001&From=%2B15551234567&To=%2B15557654321&CallStatus=ringing"
+      },
+      "valid": false
+    },
+    {
+      "name": "repeated and blank params",
+      "authToken": "twilio-test-token-not-real",
+      "request": {
+        "method": "POST",
+        "url": "https://example.com/voice?tenant=a%20b",
+        "headers": {
+          "X-Twilio-Signature": "0DOjoES2dmwMOZGX4FgrtbZ0Okc=",
+          "content-type": "application/x-www-form-urlencoded"
+        },
+        "rawBody": "B=x&A=2&A=1&A=2&Empty="
+      },
+      "valid": true
+    },
+    {
+      "name": "json body with bodySHA256",
+      "authToken": "twilio-test-token-not-real",
+      "request": {
+        "method": "POST",
+        "url": "https://example.com/events?bodySHA256=824e9c6fbe5682df1abd878986827880e2dd1f2973cc7a791e8da9ca9ef0c747",
+        "headers": {
+          "X-Twilio-Signature": "E3XVZA0b/lfh1hhoCUZ0dxAUwAE=",
+          "content-type": "application/json"
+        },
+        "rawBody": "{\"CallSid\":\"CA00000000000000000000000000000001\",\"CallStatus\":\"completed\"}"
+      },
+      "valid": true
+    },
+    {
+      "name": "json body tampered",
+      "authToken": "twilio-test-token-not-real",
+      "request": {
+        "method": "POST",
+        "url": "https://example.com/events?bodySHA256=824e9c6fbe5682df1abd878986827880e2dd1f2973cc7a791e8da9ca9ef0c747",
+        "headers": {
+          "X-Twilio-Signature": "E3XVZA0b/lfh1hhoCUZ0dxAUwAE=",
+          "content-type": "application/json"
+        },
+        "rawBody": "{\"CallSid\":\"CA00000000000000000000000000000001\",\"CallStatus\":\"busy\"}"
+      },
+      "valid": false
+    },
+    {
+      "name": "media stream websocket handshake",
+      "authToken": "twilio-test-token-not-real",
+      "request": {
+        "method": "GET",
+        "url": "wss://example.com/media?callId=abc",
+        "headers": {
+          "x-twilio-signature": "B+SYa99nW5UnFPRd49NDq3XWMP0="
+        },
+        "rawBody": ""
+      },
+      "valid": true
+    },
+    {
+      "name": "media stream handshake, missing signature",
+      "authToken": "twilio-test-token-not-real",
+      "request": {
+        "method": "GET",
+        "url": "wss://example.com/media?callId=abc",
+        "headers": {
+          "x-twilio-signature": ""
+        },
+        "rawBody": ""
+      },
+      "valid": false
+    }
+  ]
+}

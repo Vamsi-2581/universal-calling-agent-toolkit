@@ -1,0 +1,14 @@
+{
+  "description": "Deepgram live (wss://api.deepgram.com/v1/listen) server messages -> normalized SttResults. Shapes follow https://developers.deepgram.com/docs/live-streaming-audio and https://developers.deepgram.com/docs/understanding-end-of-speech-detection. segmentKey is start and duration in rounded milliseconds.",
+  "cases": [
+    { "message": { "type": "Results", "channel_index": [0, 1], "duration": 1.5, "start": 0.0, "is_final": false, "speech_final": false, "channel": { "alternatives": [ { "transcript": "my email", "confidence": 0.7, "words": [] } ] } }, "expect": [ { "type": "interim", "text": "my email", "confidence": 0.7 } ] },
+    { "message": { "type": "Results", "channel_index": [0, 1], "duration": 1.5, "start": 0.0, "is_final": true, "speech_final": false, "channel": { "alternatives": [ { "transcript": "my email is john dot", "confidence": 0.91, "words": [] } ] } }, "expect": [ { "type": "segment_final", "text": "my email is john dot", "confidence": 0.91, "segmentKey": "0:1500", "startMs": 0 } ] },
+    { "message": { "type": "Results", "channel_index": [0, 1], "duration": 1.2, "start": 1.5, "is_final": true, "speech_final": true, "channel": { "alternatives": [ { "transcript": "smith at gmail dot com", "confidence": 0.88, "words": [] } ] } }, "expect": [ { "type": "segment_final", "text": "smith at gmail dot com", "confidence": 0.88, "segmentKey": "1500:1200", "startMs": 1500 }, { "type": "turn_end" } ] },
+    { "message": { "type": "Results", "channel_index": [0, 1], "duration": 0.5, "start": 2.7, "is_final": true, "speech_final": false, "channel": { "alternatives": [ { "transcript": "", "words": [] } ] } }, "expect": [ { "type": "segment_final", "text": "", "confidence": null, "segmentKey": "2700:500", "startMs": 2700 } ] },
+    { "message": { "type": "UtteranceEnd", "channel": [0, 1], "last_word_end": 2.7 }, "expect": [ { "type": "turn_end" } ] },
+    { "message": { "type": "SpeechStarted", "channel": [0], "timestamp": 0.0 }, "expect": [] },
+    { "message": { "type": "Metadata", "request_id": "00000000-0000-0000-0000-000000000000" }, "expect": [] },
+    { "message": { "type": "Results", "is_final": true, "speech_final": false, "start": 0, "duration": 1, "channel": { "alternatives": [] } }, "expectError": "malformed_message" },
+    { "raw": "not json", "expectError": "malformed_message" }
+  ]
+}

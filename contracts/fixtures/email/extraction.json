@@ -1,0 +1,29 @@
+{
+  "description": "extractEmail(text) results. `email` = a full address was heard. `clarify` = something email-like was heard but a character is missing or ambiguous; the host should ask, never guess. Clarifications are only reported when the utterance mentions email/mail/address, so ordinary speech containing 'at' is ignored.",
+  "cases": [
+    { "text": "my email is john dot smith at gmail dot com", "expect": { "kind": "email", "email": "john.smith@gmail.com", "literal": false } },
+    { "text": "It's J O H N at example dot org.", "expect": { "kind": "email", "email": "john@example.org", "literal": false } },
+    { "text": "john underscore doe at company dot co dot uk", "expect": { "kind": "email", "email": "john_doe@company.co.uk", "literal": false } },
+    { "text": "sure, it's mary-ann at web dot de", "expect": { "kind": "email", "email": "mary-ann@web.de", "literal": false } },
+    { "text": "you can reach me at John@Example.com.", "expect": { "kind": "email", "email": "john@example.com", "literal": true } },
+    { "text": "email is s as in sam a m at gmail dot com", "expect": { "kind": "email", "email": "sam@gmail.com", "literal": false } },
+    { "text": "my address is anna at the rate yahoo dot in", "expect": { "kind": "email", "email": "anna@yahoo.in", "literal": false } },
+    { "text": "the email is bob plus test at mail dot com", "expect": { "kind": "email", "email": "bob+test@mail.com", "literal": false } },
+    { "text": "email: x y z one two at abc dot io", "expect": { "kind": "email", "email": "xyz12@abc.io", "literal": false } },
+    { "text": "email me at work, it's tom at site dot net", "expect": { "kind": "email", "email": "tom@site.net", "literal": false } },
+    { "text": "my email is john at gmail dot com dot", "expect": { "kind": "email", "email": "john@gmail.com", "literal": false } },
+    { "text": "my e-mail is l i s a 9 9 at proton dot me", "expect": { "kind": "email", "email": "lisa99@proton.me", "literal": false } },
+    { "text": "my email is john dot smith at gmail dot com and my phone is 555", "expect": { "kind": "email", "email": "john.smith@gmail.com", "literal": false } },
+    { "text": "john dot smith at gmail dot com", "expect": { "kind": "email", "email": "john.smith@gmail.com", "literal": false } },
+    { "text": "my email is john at gmail", "expect": { "kind": "clarify", "reason": "incomplete_domain", "heard": "john@gmail" } },
+    { "text": "my email is john smith at gmail dot com", "expect": { "kind": "clarify", "reason": "ambiguous_local_part", "heard": "smith@gmail.com" } },
+    { "text": "my email is at gmail dot com", "expect": { "kind": "clarify", "reason": "missing_local_part", "heard": "@gmail.com" } },
+    { "text": "my email is john dot at gmail dot com", "expect": { "kind": "clarify", "reason": "invalid_format", "heard": "@gmail.com" } },
+    { "text": "my email is lisa underscore at gmail dot com", "expect": { "kind": "clarify", "reason": "invalid_format", "heard": "@gmail.com" } },
+    { "text": "my email is john at gmail dot c", "expect": { "kind": "clarify", "reason": "invalid_format", "heard": "john@gmail.c" } },
+    { "text": "I'm at home right now", "expect": null },
+    { "text": "we met at noon dot com", "expect": null },
+    { "text": "what are your opening hours", "expect": null },
+    { "text": "", "expect": null }
+  ]
+}

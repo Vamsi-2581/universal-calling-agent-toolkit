@@ -1,0 +1,126 @@
+{
+  "description": "PlivoCallControl REST operations against a mock HTTP client. Endpoints follow https://www.plivo.com/docs/voice/api/call/make-a-call, https://www.plivo.com/docs/voice/api/audio-streams and https://docs.plivo.com/docs/voice/api/call/dtmf. JSON bodies are compared after parsing. Plivo's create-call response carries request_uuid, which is used as callId; the call_uuid arrives later in callbacks.",
+  "config": { "authId": "MA0000000000000000000", "authToken": "plivo-test-token-not-real" },
+  "cases": [
+    {
+      "name": "outbound call",
+      "op": "startOutboundCall",
+      "args": { "to": "+15557654321", "from": "+15551234567", "answer": { "url": "https://example.com/answer", "method": "POST", "hangupUrl": "https://example.com/hangup" } },
+      "expectRequest": { "method": "POST", "url": "https://api.plivo.com/v1/Account/MA0000000000000000000/Call/", "contentType": "application/json", "body": { "from": "+15551234567", "to": "+15557654321", "answer_url": "https://example.com/answer", "answer_method": "POST", "hangup_url": "https://example.com/hangup" } },
+      "response": { "status": 201, "body": "{\"message\":\"call fired\",\"request_uuid\":\"9834029e-58b6-11e1-b8b7-a5bd0e4e126f\",\"api_id\":\"97ceeb52-58b6-11e1-86da-77300b68f8bb\"}" },
+      "expect": { "callId": "9834029e-58b6-11e1-b8b7-a5bd0e4e126f", "provider": "plivo", "direction": "outbound", "status": "queued", "from": "+15551234567", "to": "+15557654321" }
+    },
+    {
+      "name": "answer url is required",
+      "op": "startOutboundCall",
+      "args": { "to": "+15557654321", "from": "+15551234567", "answer": {} },
+      "expectRequest": null,
+      "expectError": "invalid_configuration"
+    },
+    {
+      "name": "hang up",
+      "op": "endCall",
+      "args": { "callId": "11111111-2222-3333-4444-555555555555" },
+      "expectRequest": { "method": "DELETE", "url": "https://api.plivo.com/v1/Account/MA0000000000000000000/Call/11111111-2222-3333-4444-555555555555/", "contentType": null, "body": null },
+      "response": { "status": 204, "body": "" },
+      "expect": null
+    },
+    {
+      "name": "transfer the A leg to new XML",
+      "op": "transferCall",
+      "args": { "callId": "11111111-2222-3333-4444-555555555555", "target": { "to": "https://example.com/transfer.xml" } },
+      "expectRequest": { "method": "POST", "url": "https://api.plivo.com/v1/Account/MA0000000000000000000/Call/11111111-2222-3333-4444-555555555555/", "contentType": "application/json", "body": { "legs": "aleg", "aleg_url": "https://example.com/transfer.xml" } },
+      "response": { "status": 202, "body": "{\"message\":\"call transferred\",\"api_id\":\"x\"}" },
+      "expect": null
+    },
+    {
+      "name": "transfer target must be an https XML URL",
+      "op": "transferCall",
+      "args": { "callId": "11111111-2222-3333-4444-555555555555", "target": { "to": "+15550001111" } },
+      "expectRequest": null,
+      "expectError": "invalid_configuration"
+    },
+    {
+      "name": "send DTMF",
+      "op": "sendDtmf",
+      "args": { "callId": "11111111-2222-3333-4444-555555555555", "digits": "12#" },
+      "expectRequest": { "method": "POST", "url": "https://api.plivo.com/v1/Account/MA0000000000000000000/Call/11111111-2222-3333-4444-555555555555/DTMF/", "contentType": "application/json", "body": { "digits": "12#" } },
+      "response": { "status": 202, "body": "{\"message\":\"digits sent\",\"api_id\":\"x\"}" },
+      "expect": null
+    },
+    {
+      "name": "invalid DTMF is refused",
+      "op": "sendDtmf",
+      "args": { "callId": "11111111-2222-3333-4444-555555555555", "digits": "12x" },
+      "expectRequest": null,
+      "expectError": "invalid_configuration"
+    },
+    {
+      "name": "start a bidirectional stream with provider noise cancellation",
+      "op": "startMediaStream",
+      "args": { "callId": "11111111-2222-3333-4444-555555555555", "request": { "url": "wss://example.com/media", "tracks": ["inbound"], "bidirectional": true, "format": { "encoding": "mulaw", "sampleRate": 8000, "channels": 1 }, "providerOptions": { "noise_cancellation": true, "noise_cancellation_level": 85, "stream_timeout": 600 } } },
+      "expectRequest": { "method": "POST", "url": "https://api.plivo.com/v1/Account/MA0000000000000000000/Call/11111111-2222-3333-4444-555555555555/Stream/", "contentType": "application/json", "body": { "service_url": "wss://example.com/media", "bidirectional": true, "audio_track": "inbound", "content_type": "audio/x-mulaw;rate=8000", "noise_cancellation": "true", "noise_cancellation_level": 85, "stream_timeout": 600 } },
+      "response": { "status": 201, "body": "{\"api_id\":\"x\",\"message\":\"audio streaming started\",\"stream_id\":\"aaaaaaaa-bbbb-cccc-dddd-000000000009\"}" },
+      "expect": { "callId": "11111111-2222-3333-4444-555555555555", "streamId": "aaaaaaaa-bbbb-cccc-dddd-000000000009" }
+    },
+    {
+      "name": "bidirectional streams cannot carry outbound audio",
+      "op": "startMediaStream",
+      "args": { "callId": "11111111-2222-3333-4444-555555555555", "request": { "url": "wss://example.com/media", "tracks": ["inbound", "outbound"], "bidirectional": true } },
+      "expectRequest": null,
+      "expectError": "invalid_configuration"
+    },
+    {
+      "name": "noise cancellation level is range-checked",
+      "op": "startMediaStream",
+      "args": { "callId": "11111111-2222-3333-4444-555555555555", "request": { "url": "wss://example.com/media", "tracks": ["inbound"], "bidirectional": false, "providerOptions": { "noise_cancellation": true, "noise_cancellation_level": 120 } } },
+      "expectRequest": null,
+      "expectError": "invalid_configuration"
+    },
+    {
+      "name": "unknown provider options are refused",
+      "op": "startMediaStream",
+      "args": { "callId": "11111111-2222-3333-4444-555555555555", "request": { "url": "wss://example.com/media", "tracks": ["inbound"], "bidirectional": false, "providerOptions": { "foo": 1 } } },
+      "expectRequest": null,
+      "expectError": "invalid_configuration"
+    },
+    {
+      "name": "unknown track names are refused",
+      "op": "startMediaStream",
+      "args": { "callId": "11111111-2222-3333-4444-555555555555", "request": { "url": "wss://example.com/media", "tracks": ["both"], "bidirectional": false } },
+      "expectRequest": null,
+      "expectError": "invalid_configuration"
+    },
+    {
+      "name": "stream with both tracks, missing stream_id",
+      "op": "startMediaStream",
+      "args": { "callId": "11111111-2222-3333-4444-555555555555", "request": { "url": "wss://example.com/media", "tracks": ["inbound", "outbound"], "bidirectional": false } },
+      "expectRequest": { "method": "POST", "url": "https://api.plivo.com/v1/Account/MA0000000000000000000/Call/11111111-2222-3333-4444-555555555555/Stream/", "contentType": "application/json", "body": { "service_url": "wss://example.com/media", "bidirectional": false, "audio_track": "both" } },
+      "response": { "status": 201, "body": "{\"api_id\":\"x\",\"message\":\"audio streaming started\"}" },
+      "expectError": "protocol_violation"
+    },
+    {
+      "name": "stop a stream",
+      "op": "stopMediaStream",
+      "args": { "callId": "11111111-2222-3333-4444-555555555555", "streamId": "aaaaaaaa-bbbb-cccc-dddd-000000000009" },
+      "expectRequest": { "method": "DELETE", "url": "https://api.plivo.com/v1/Account/MA0000000000000000000/Call/11111111-2222-3333-4444-555555555555/Stream/aaaaaaaa-bbbb-cccc-dddd-000000000009/", "contentType": null, "body": null },
+      "response": { "status": 204, "body": "" },
+      "expect": null
+    },
+    {
+      "name": "unknown call is a configuration error",
+      "op": "endCall",
+      "args": { "callId": "11111111-2222-3333-4444-555555555555" },
+      "expectRequest": { "method": "DELETE", "url": "https://api.plivo.com/v1/Account/MA0000000000000000000/Call/11111111-2222-3333-4444-555555555555/", "contentType": null, "body": null },
+      "response": { "status": 404, "body": "{\"api_id\":\"x\",\"error\":\"not found\"}" },
+      "expectError": "invalid_configuration"
+    },
+    {
+      "name": "hangup callback becomes call_status",
+      "op": "parseWebhook",
+      "args": { "rawBody": "CallUUID=11111111-2222-3333-4444-555555555555&CallStatus=timeout" },
+      "expectRequest": null,
+      "expect": [ { "type": "call_status", "provider": "plivo", "callId": "11111111-2222-3333-4444-555555555555", "sessionId": "11111111-2222-3333-4444-555555555555", "receivedAtMs": 1000, "providerSequence": null, "status": "no_answer", "providerStatus": "timeout" } ]
+    }
+  ]
+}
