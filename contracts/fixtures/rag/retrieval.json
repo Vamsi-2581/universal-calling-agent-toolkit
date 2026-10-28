@@ -14,7 +14,7 @@
       "expect": {
         "status": "ok",
         "chunkIds": ["c1", "c4"],
-        "droppedForAccess": 2,
+        "droppedForAccess": 1,
         "citations": [
           { "id": "1", "chunkId": "c1", "documentId": "d1", "title": "Support FAQ", "uri": "kb://faq#hours", "page": null },
           { "id": "2", "chunkId": "c4", "documentId": "d4", "title": "Untrusted note", "uri": null, "page": null }
